@@ -88,25 +88,9 @@ const WalletPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 space-y-6">
-      {/* User Info */}
-      <header className="flex items-center justify-start mb-6 space-x-4">
-        <div
-          className="w-12 h-12 bg-cover bg-center rounded-full border-2 border-gray-300"
-          style={{ backgroundImage: `url(${user?.imageUrl})` }}
-          aria-label="Profile image"
-        />
-        <div>
-          <p className="text-lg font-semibold text-gray-900">
-            {user?.firstName}
-          </p>
-          <p className="text-sm text-gray-600">{user?.email}</p>
-        </div>
-      </header>
-
       <h1 className="text-2xl font-bold text-gray-900 mb-6">My Wallet</h1>
 
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Send / Receive Card */}
         <div className="flex-1 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
           {/* Tabs */}
           <div className="flex border-b border-gray-200">
@@ -193,8 +177,6 @@ const WalletPage = () => {
             )}
           </div>
         </div>
-
-        {/* Balance Card */}
 
         <div className="flex-1 bg-gradient-to-tr from-purple-200 via-pink-200 to-orange-200 rounded-2xl p-6 shadow-lg flex flex-col justify-between">
           <div>

@@ -1,36 +1,107 @@
-import React from 'react';
+// components/RecentTransactions.tsx
+'use client';
+
+import { useEffect, useState } from 'react';
 import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import API from '@/app/api/api';
+
+interface Transaction {
+  id: string;
+  type: 'send' | 'receive' | 'bet';
+  amount: number;
+  counterparty?: string;
+  date: string;
+  status?: 'completed' | 'pending' | 'failed';
+}
 
 export const RecentTransactions: React.FC = () => {
-  const transactions = [
-    {
-      id: 1,
-      type: 'sent',
-      amount: 450,
-      recipient: 'Sarah Johnson',
-      avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=60&h=60&fit=crop',
-      date: '2 hours ago',
-      category: 'Pool Contribution'
-    },
-    {
-      id: 2,
-      type: 'received',
-      amount: 1250,
-      recipient: 'Holiday Squad',
-      avatar: '🏖️',
-      date: '1 day ago',
-      category: 'Pool Payout'
-    },
-    {
-      id: 3,
-      type: 'sent',
-      amount: 150,
-      recipient: 'Mike Chen',
-      avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=60&h=60&fit=crop',
-      date: '3 days ago',
-      category: 'Split Bill'
-    },
-  ];
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        // 1. Get current user
+        const meRes = await API.get('/me');
+        const userData = meRes.data as { apiUserId: string };
+        const apiUserId = userData.apiUserId;
+
+        // 2. Fetch transactions from real API
+        const API_TOKEN = 'ee4786b66aaa953af6691317340bc0c1aff5d87e80c8518ad43e40731f19718f'; // Move to .env later
+
+        const response = await fetch(
+          `https://seal-app-qp9cc.ondigitalocean.app/api/v1/${apiUserId}/transactions`, // 🔥 Fixed: Removed extra space
+          {
+            headers: {
+              Authorization: `Bearer ${API_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (!response.ok) throw new Error('Failed to fetch transactions');
+
+        const txData = await response.json();
+
+        // 3. Map API data to our format
+        const mapped: Transaction[] = (txData.transactions || []).map((t: unknown) => {
+          const tx = t as {
+            id: string;
+            value: number;
+            txType?: string;
+            createdAt: string;
+            status?: string;
+          };
+          return {
+            id: tx.id,
+            type: tx.value < 0 ? 'send' : 'receive',
+            amount: Math.abs(tx.value),
+            counterparty: tx.txType?.replace('Payment from ', '') || 'Unknown',
+            date: new Date(tx.createdAt).toLocaleDateString('en-ZA', {
+              day: '2-digit',
+              month: 'short',
+            }),
+            status: tx.status?.toLowerCase(),
+          };
+        });
+
+        // Only show last 5 transactions
+        setTransactions(mapped.slice(0, 5));
+      } catch (err) {
+        console.error('Error fetching transactions:', err);
+        setTransactions([]); // Show empty on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
+          <span className="text-sm text-gray-500">Loading...</span>
+        </div>
+        <div className="animate-pulse space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex justify-between items-center">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                <div>
+                  <div className="w-24 h-4 bg-gray-200 rounded"></div>
+                  <div className="w-20 h-3 bg-gray-100 rounded mt-1"></div>
+                </div>
+              </div>
+              <div className="w-16 h-5 bg-gray-200 rounded"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm">
@@ -40,49 +111,67 @@ export const RecentTransactions: React.FC = () => {
           View All
         </button>
       </div>
-      
-      <div className="space-y-4">
-        {transactions.map((transaction) => (
-          <div key={transaction.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors">
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                {typeof transaction.avatar === 'string' && transaction.avatar.startsWith('http') ? (
-                  <img 
-                    src={transaction.avatar} 
-                    alt={transaction.recipient}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-lg">
-                    {transaction.avatar}
+
+      {transactions.length === 0 ? (
+        <p className="text-gray-500 text-sm text-center py-4">No transactions yet</p>
+      ) : (
+        <div className="space-y-4">
+          {transactions.map((tx) => {
+            const isSent = tx.type === 'send';
+            const displayName = tx.counterparty || 'Unknown User';
+            const category = isSent
+              ? 'Pool Contribution'
+              : tx.type === 'receive'
+              ? 'Pool Payout'
+              : 'Bet';
+
+            return (
+              <div
+                key={tx.id}
+                className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors"
+              >
+                {/* Left: Avatar + Info */}
+                <div className="flex items-center space-x-3">
+                  <div className="relative">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-sm ${
+                        isSent ? 'bg-red-500' : 'bg-green-500'
+                      }`}
+                    >
+                      {displayName.charAt(0).toUpperCase()}
+                    </div>
+                    <div
+                      className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${
+                        isSent ? 'bg-red-600' : 'bg-green-600'
+                      }`}
+                    >
+                      {isSent ? (
+                        <ArrowUpRight className="w-3 h-3 text-white" />
+                      ) : (
+                        <ArrowDownLeft className="w-3 h-3 text-white" />
+                      )}
+                    </div>
                   </div>
-                )}
-                <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${
-                  transaction.type === 'sent' ? 'bg-red-500' : 'bg-green-500'
-                }`}>
-                  {transaction.type === 'sent' ? (
-                    <ArrowUpRight className="w-3 h-3 text-white" />
-                  ) : (
-                    <ArrowDownLeft className="w-3 h-3 text-white" />
-                  )}
+                  <div>
+                    <p className="font-medium text-gray-900">{displayName}</p>
+                    <p className="text-xs text-gray-500">{category}</p>
+                  </div>
+                </div>
+
+                {/* Right: Amount + Date */}
+                <div className="text-right">
+                  <p className={`font-semibold ${isSent ? 'text-red-600' : 'text-green-600'}`}>
+                    {isSent ? '-' : '+'}R{tx.amount.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500">{tx.date}</p>
                 </div>
               </div>
-              <div>
-                <p className="font-medium text-gray-900">{transaction.recipient}</p>
-                <p className="text-xs text-gray-500">{transaction.category}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className={`font-semibold ${
-                transaction.type === 'sent' ? 'text-red-600' : 'text-green-600'
-              }`}>
-                {transaction.type === 'sent' ? '-' : '+'}R{transaction.amount}
-              </p>
-              <p className="text-xs text-gray-500">{transaction.date}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
+
+export default RecentTransactions;

@@ -1,11 +1,16 @@
+'use client';
 import React from 'react';
 import { Send, Download, Users } from 'lucide-react';
 
-export const QuickActions: React.FC = () => {
+interface QuickActionsProps {
+  onCreatePool?: () => void;
+}
+
+export const QuickActions: React.FC<QuickActionsProps> = ({ onCreatePool }) => {
   const actions = [
-    { icon: Send, label: 'Send', color: 'bg-blue-500' },
-    { icon: Download, label: 'Receive', color: 'bg-green-500' },
-    { icon: Users, label: 'Create Pool', color: 'bg-teal-500' },
+    { icon: Send, label: 'Send', color: 'bg-indigo-500', onClick: () => alert('Send clicked') },
+    { icon: Download, label: 'Receive', color: 'bg-green-500', onClick: () => alert('Receive clicked') },
+    { icon: Users, label: 'Create Pool', color: 'bg-teal-500', onClick: onCreatePool }, // call prop
   ];
 
   return (
@@ -15,6 +20,7 @@ export const QuickActions: React.FC = () => {
         {actions.map((action, index) => (
           <button
             key={index}
+            onClick={action.onClick}
             className="flex flex-col items-center p-4 hover:bg-gray-50 rounded-xl transition-colors group"
           >
             <div className={`w-12 h-12 ${action.color} rounded-full flex items-center justify-center mb-3 group-hover:scale-105 transition-transform`}>
