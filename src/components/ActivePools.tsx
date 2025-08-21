@@ -1,6 +1,8 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { Users, Calendar, TrendingUp } from 'lucide-react';
+
+import React, { useState, useEffect } from "react";
+import { Users, Calendar, TrendingUp } from "lucide-react";
+import axios from "axios";
 
 interface Pool {
   id: number;
@@ -18,16 +20,62 @@ interface ActivePoolsProps {
 }
 
 export const ActivePools: React.FC<ActivePoolsProps> = ({ onViewPool }) => {
-  const [isClient, setIsClient] = useState(false);
+  const [pools, setPools] = useState<Pool[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setIsClient(true); 
+    const fetchActivePools = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No token found");
+
+        // Backend response type
+        type BackendPool = {
+          id: number;
+          poolName: string;
+          members: any[];
+          goal: number;
+          currentAmount?: number;
+          endDate?: string;
+          category?: string;
+        };
+
+          const res = await axios.get<BackendPool[]>(
+          `http://localhost:8080/api/pools/my-active`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const mappedPools: Pool[] = res.data.map((pool) => ({
+          id: pool.id,
+          name: pool.poolName,
+          members: pool.members.length,
+          current: pool.currentAmount || 0,
+          target: pool.goal,
+          progress:
+            pool.goal > 0
+              ? Math.round(((pool.currentAmount || 0) / pool.goal) * 100)
+              : 0,
+          nextPayout: pool.endDate
+            ? new Date(pool.endDate).toLocaleDateString("en-ZA")
+            : "-",
+          category: pool.category || "General",
+        }));
+
+        setPools(mappedPools);
+      } catch (err) {
+        console.error("Failed to fetch active pools:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivePools();
   }, []);
 
-  const pools: Pool[] = [
-    { id: 1, name: 'Holiday Squad 🏖️', members: 5, progress: 58, current: 8750, target: 15000, nextPayout: '15 Dec', category: 'Travel' },
-    { id: 2, name: 'Emergency Fund 🛡️', members: 3, progress: 72, current: 7200, target: 10000, nextPayout: '20 Dec', category: 'Savings' },
-  ];
+  if (loading) return <div className="p-6 text-gray-500">Loading active pools...</div>;
+  if (!pools.length) return <div className="p-6 text-gray-700">No active pools yet.</div>;
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm">
@@ -61,10 +109,10 @@ export const ActivePools: React.FC<ActivePoolsProps> = ({ onViewPool }) => {
 
             <div className="flex-shrink-0 text-right min-w-[80px]">
               <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">
-                {isClient ? `R${pool.current.toLocaleString('en-ZA')}` : 'R••••'}
+                R{pool.current.toLocaleString("en-ZA")}
               </p>
               <p className="text-xs text-gray-500 whitespace-nowrap">
-                {isClient ? `of R${pool.target.toLocaleString('en-ZA')}` : ''}
+                of R{pool.target.toLocaleString("en-ZA")}
               </p>
             </div>
 
