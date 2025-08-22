@@ -4,5 +4,9 @@ export interface PoolInvite {
   poolName: string;
   creatorName: string;
   goal: number;
+  frequency: string;
+  contributionPerMember: number;
+  startDate: string;
+  endDate: string;
   status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
 }

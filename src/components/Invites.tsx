@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import poolInviteAPI from '@/app/api/poolInvite';
 import { Check, X } from 'lucide-react';
+import { getMyInvites, respondToInvite } from '@/app/api/poolInvite';
 
 interface PoolInviteDTO {
   id: string;
@@ -13,6 +13,7 @@ interface PoolInviteDTO {
   contributionPerMember: number;
   startDate: string;
   endDate: string;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
 }
 
 const InvitesPage: React.FC = () => {
@@ -23,7 +24,7 @@ const InvitesPage: React.FC = () => {
   useEffect(() => {
     const fetchInvites = async () => {
       try {
-        const res = await poolInviteAPI.get<PoolInviteDTO[]>('/my-invites');
+        const res = await getMyInvites();
         setInvites(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         console.error(err);
@@ -32,13 +33,12 @@ const InvitesPage: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchInvites();
   }, []);
 
   const handleAction = async (inviteId: string, action: 'ACCEPTED' | 'DECLINED') => {
     try {
-      await poolInviteAPI.patch(`/invite/${inviteId}`, { status: action });
+      await respondToInvite(inviteId, action);
       setInvites((prev) => prev.filter((i) => i.id !== inviteId));
     } catch (err) {
       console.error(err);

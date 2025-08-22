@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { Pool } from '@/models/Pool';
 
 const poolAPI = axios.create({
-  baseURL: 'http://localhost:8080/api/pools', // make sure this is exact
+  baseURL: 'http://localhost:8080/api/pools',
 });
 
 poolAPI.interceptors.request.use(config => {
@@ -15,7 +15,7 @@ poolAPI.interceptors.request.use(config => {
 });
 
 export function createPool(pool: Pool) {
-  return poolAPI.post('', pool); // '' appends nothing, so it hits /api/pools
+  return poolAPI.post('', pool); 
 }
 
 export default poolAPI;
