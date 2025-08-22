@@ -1,22 +1,44 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from "react";
 import { Users, Calendar, TrendingUp } from "lucide-react";
 import axios from "axios";
 
-interface Pool {
+export interface Member {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  contribution: number;
+  isCreator: boolean;
+}
+
+export interface Contribution {
+  id: string;
+  date: string;
+  amount: number;
+  member: string;
+}
+
+export interface Pool {
   id: number;
   name: string;
-  members: number;
-  progress: number;
-  current: number;
-  target: number;
-  nextPayout: string;
+  description: string;
+  goal: number;
+  currentAmount: number;
+  currency: string;
+  frequency: string;
+  nextPaymentDate: string;
+  startDate: string;
+  endDate: string;
+  createdBy: string;
+  members: Member[];
+  contributionHistory: Contribution[];
   category: string;
 }
 
 interface ActivePoolsProps {
-  onViewPool: () => void;
+  onViewPool: (pool: Pool) => void;
 }
 
 export const ActivePools: React.FC<ActivePoolsProps> = ({ onViewPool }) => {
@@ -29,37 +51,45 @@ export const ActivePools: React.FC<ActivePoolsProps> = ({ onViewPool }) => {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token found");
 
-        // Backend response type
         type BackendPool = {
           id: number;
           poolName: string;
+          description?: string;
           members: any[];
           goal: number;
           currentAmount?: number;
+          startDate?: string;
           endDate?: string;
+          contributionHistory?: any[];
           category?: string;
         };
 
-          const res = await axios.get<BackendPool[]>(
+        const res = await axios.get<BackendPool[]>(
           `http://localhost:8080/api/pools/my-active`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         const mappedPools: Pool[] = res.data.map((pool) => ({
           id: pool.id,
           name: pool.poolName,
-          members: pool.members.length,
-          current: pool.currentAmount || 0,
-          target: pool.goal,
-          progress:
-            pool.goal > 0
-              ? Math.round(((pool.currentAmount || 0) / pool.goal) * 100)
-              : 0,
-          nextPayout: pool.endDate
-            ? new Date(pool.endDate).toLocaleDateString("en-ZA")
-            : "-",
+          description: pool.description || "No description",
+          goal: pool.goal,
+          currentAmount: pool.currentAmount || 0,
+          currency: "R",
+          frequency: "Weekly",
+          nextPaymentDate: pool.endDate || "",
+          startDate: pool.startDate || "",
+          endDate: pool.endDate || "",
+          createdBy: "user-1",
+          members: pool.members.map((m: any) => ({
+            id: m.id,
+            name: m.name,
+            email: m.email,
+            avatar: m.avatar || "/default.png",
+            contribution: m.contribution || 0,
+            isCreator: m.isCreator || false,
+          })),
+          contributionHistory: pool.contributionHistory || [],
           category: pool.category || "General",
         }));
 
@@ -91,40 +121,42 @@ export const ActivePools: React.FC<ActivePoolsProps> = ({ onViewPool }) => {
           <div
             key={pool.id}
             className="border border-gray-200 rounded-xl p-4 hover:border-indigo-200 transition-colors cursor-pointer flex flex-col md:flex-row md:justify-between md:items-center gap-4"
-            onClick={onViewPool}
+            onClick={() => onViewPool(pool)}
           >
             <div className="flex-1 min-w-0">
               <h4 className="font-semibold text-gray-900 truncate">{pool.name}</h4>
               <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500 flex-wrap">
                 <div className="flex items-center">
                   <Users className="w-3 h-3 mr-1" />
-                  {pool.members} members
+                  {pool.members.length} members
                 </div>
                 <div className="flex items-center">
                   <Calendar className="w-3 h-3 mr-1" />
-                  Next: {pool.nextPayout}
+                  Next: {pool.nextPaymentDate || "-"}
                 </div>
               </div>
             </div>
 
             <div className="flex-shrink-0 text-right min-w-[80px]">
               <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">
-                R{pool.current.toLocaleString("en-ZA")}
+                R{pool.currentAmount.toLocaleString("en-ZA")}
               </p>
               <p className="text-xs text-gray-500 whitespace-nowrap">
-                of R{pool.target.toLocaleString("en-ZA")}
+                of R{pool.goal.toLocaleString("en-ZA")}
               </p>
             </div>
 
             <div className="flex-1 w-full md:max-w-[200px] mt-2 md:mt-0">
               <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
                 <span>Progress</span>
-                <span>{pool.progress}%</span>
+                <span>{pool.goal > 0 ? Math.round((pool.currentAmount / pool.goal) * 100) : 0}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-gradient-to-r from-teal-500 to-teal-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${pool.progress}%` }}
+                  style={{
+                    width: `${pool.goal > 0 ? Math.round((pool.currentAmount / pool.goal) * 100) : 0}%`,
+                  }}
                 />
               </div>
             </div>
