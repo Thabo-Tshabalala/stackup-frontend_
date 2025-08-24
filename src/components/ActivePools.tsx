@@ -58,7 +58,7 @@ export const ActivePools: React.FC<ActivePoolsProps> = ({ onViewPool }) => {
         );
 
        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mappedPools: Pool[] = res.data.map((pool: any) => ({
+        const mappedPools: Pool[] = (res.data as any[]).map((pool: any) => ({
           id: pool.id,
           name: pool.poolName,
           description: pool.description || "No description",

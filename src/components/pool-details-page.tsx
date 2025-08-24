@@ -1,8 +1,8 @@
 "use client"
-import poolAPI from "@/app/api/poolApi"
-import { PoolResponse } from "@/models/PoolResponse"
 
 import React, { useState } from "react"
+import poolAPI from "@/app/api/poolApi"
+import { PoolResponse } from "@/models/PoolResponse"
 import {
   Settings,
   TrendingUp,
@@ -25,7 +25,7 @@ export interface Pool {
   currency: string
   frequency: string
   nextPaymentDate: string
-    paymentIdentifier?: string  // <-- add this
+  paymentIdentifier?: string
   members: Array<{
     id: string
     name: string
@@ -40,6 +40,13 @@ export interface Pool {
     amount: number
     member: string
   }>
+}
+
+export interface Invite {
+  id: string
+  email: string
+  invitedAt: string
+  status: "PENDING" | "ACCEPTED" | "DECLINED"
 }
 
 interface PoolDetailsPageProps {
@@ -59,21 +66,70 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
   const [editPoolDescription, setEditPoolDescription] = useState(pool.description)
   const [editPoolGoal, setEditPoolGoal] = useState(pool.goal.toString())
 
+  const [invites, setInvites] = useState<Invite[]>([])
+
   const progressPercentage = (pool.currentAmount / pool.goal) * 100
   const remainingAmount = pool.goal - pool.currentAmount
-
   const currentUser = pool.members.find((m) => m.id)
 
-const handleContribute = async () => {
-  if (!contributionAmount || isNaN(Number(contributionAmount))) {
-    alert("Please enter a valid amount");
-    return;
+  const handleContribute = async () => {
+    if (!contributionAmount || isNaN(Number(contributionAmount))) {
+      alert("Please enter a valid amount")
+      return
+    }
+
+    if (!pool.paymentIdentifier) {
+      alert("Payment identifier is missing!")
+      return
+    }
+
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        alert("You are not authenticated")
+        return
+      }
+
+      const response = await poolAPI.post(
+        `/contribute`,
+        null,
+        {
+          params: {
+            poolPaymentId: pool.paymentIdentifier,
+            amount: Number(contributionAmount),
+            notes: ""
+          },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+
+      const updatedPool = response.data as PoolResponse
+      pool.paymentIdentifier = updatedPool.paymentIdentifier
+
+      setContributionAmount("")
+      setIsContributeDialogOpen(false)
+    } catch (err) {
+      console.error(err)
+      alert("Contribution failed, please try again")
+    }
   }
 
-  if (!pool.paymentIdentifier) {
-    alert("Payment identifier is missing!");
-    return;
-  }
+interface PoolInviteDTO {
+  id: number;         
+  poolId: number;        
+  poolName: string;
+  inviteeId: number;     
+  inviteeEmail: string;
+  inviteeName: string;
+  pending: boolean;
+  accepted: boolean;
+  declined: boolean;
+  creatorId: number;
+  creatorName: string;
+}
+
+const handleInviteMember = async () => {
+  if (!newMemberEmail) return;
 
   try {
     const token = localStorage.getItem("token");
@@ -81,47 +137,40 @@ const handleContribute = async () => {
       alert("You are not authenticated");
       return;
     }
-const response = await poolAPI.post(
-  `/contribute`,
-  null, // no request body
-  {
-    params: {
-      poolPaymentId: pool.paymentIdentifier,
-      amount: Number(contributionAmount),
-      notes: ""
-    },
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
-);
 
+    console.log("Inviting member with email:", newMemberEmail);
+    console.log("Using pool ID:", pool.id);
+    console.log("Authorization token:", token);
 
-    const updatedPool = response.data as PoolResponse;
+    const response = await poolAPI.post<PoolInviteDTO>(
+      `/${pool.id}/invite`, // use numeric pool ID
+      { email: newMemberEmail },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-    pool.paymentIdentifier = updatedPool.paymentIdentifier;
+    const invite = response.data;
+    console.log("Invite response:", invite);
 
-    setContributionAmount("");
-    setIsContributeDialogOpen(false);
+    setInvites((prev) => [...prev, {
+      id: invite.id.toString(),
+      email: invite.inviteeEmail,
+      invitedAt: new Date().toISOString(),
+      status: invite.pending ? "PENDING" : invite.accepted ? "ACCEPTED" : "DECLINED"
+    }]);
 
-  } catch (err) {
-    console.error(err);
-    alert("Contribution failed, please try again");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    console.error("Error inviting member:", err);
+    const message = err.response?.data || err.message;
+    alert("Failed to invite member: " + message);
+  } finally {
+    setNewMemberEmail("");
+    setIsInviteDialogOpen(false);
   }
 };
 
 
 
-
-
-
-
-
-  const handleInviteMember = () => {
-    console.log("Inviting:", newMemberEmail)
-    setNewMemberEmail("")
-    setIsInviteDialogOpen(false)
-  }
 
   const handleEditPool = () => {
     console.log("Editing pool:", { name: editPoolName, description: editPoolDescription, goal: editPoolGoal })
@@ -150,29 +199,20 @@ const response = await poolAPI.post(
           </div>
           {currentUser?.isCreator && (
             <div className="relative">
-              <button
-                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                className="p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-              >
+              <button onClick={() => setIsSettingsOpen(!isSettingsOpen)} className="p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
                 <Settings className="h-5 w-5 text-slate-600" />
               </button>
               {isSettingsOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-10">
                   <button
-                    onClick={() => {
-                      setIsEditPoolDialogOpen(true)
-                      setIsSettingsOpen(false)
-                    }}
+                    onClick={() => { setIsEditPoolDialogOpen(true); setIsSettingsOpen(false) }}
                     className="w-full px-4 py-2 text-left hover:bg-slate-50 rounded-t-lg flex items-center space-x-2"
                   >
                     <Edit className="h-4 w-4 text-slate-600" />
                     <span>Edit Pool</span>
                   </button>
                   <button
-                    onClick={() => {
-                      setIsDeleteConfirmOpen(true)
-                      setIsSettingsOpen(false)
-                    }}
+                    onClick={() => { setIsDeleteConfirmOpen(true); setIsSettingsOpen(false) }}
                     className="w-full px-4 py-2 text-left hover:bg-slate-50 text-red-600 rounded-b-lg flex items-center space-x-2"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -213,10 +253,7 @@ const response = await poolAPI.post(
             </div>
             <div className="text-3xl font-bold text-slate-900">{progressPercentage.toFixed(1)}%</div>
             <div className="w-full h-3 bg-slate-200 rounded-full mt-3">
-              <div
-                className="h-3 bg-emerald-500 rounded-full transition-all duration-500"
-                style={{ width: `${progressPercentage}%` }}
-              />
+              <div className="h-3 bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%` }} />
             </div>
           </div>
 
@@ -238,11 +275,7 @@ const response = await poolAPI.post(
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === tab
-                      ? "border-emerald-500 text-emerald-600"
-                      : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-                  }`}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab ? "border-emerald-500 text-emerald-600" : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"}`}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
@@ -251,35 +284,30 @@ const response = await poolAPI.post(
           </div>
 
           <div className="p-6 space-y-6">
-            {/* Overview Tab */}
-{/* Overview Tab */}
-{activeTab === "overview" && (
-  <div className="grid gap-4 md:grid-cols-2">
-    <button
-      onClick={() => setIsContributeDialogOpen(true)}
-      className="bg-slate-50 hover:bg-slate-100 p-6 rounded-lg transition-colors border-2 border-dashed border-slate-300 hover:border-emerald-300"
-    >
-      <div className="text-center">
-        <Plus className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
-        <h3 className="font-semibold text-slate-900">Make a Contribution</h3>
-      </div>
-    </button>
+            {activeTab === "overview" && (
+              <div className="grid gap-4 md:grid-cols-2">
+                <button
+                  onClick={() => setIsContributeDialogOpen(true)}
+                  className="bg-slate-50 hover:bg-slate-100 p-6 rounded-lg transition-colors border-2 border-dashed border-slate-300 hover:border-emerald-300"
+                >
+                  <div className="text-center">
+                    <Plus className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
+                    <h3 className="font-semibold text-slate-900">Make a Contribution</h3>
+                  </div>
+                </button>
 
-    {/* Invite Members button visible for all users */}
-    <button
-      onClick={() => setIsInviteDialogOpen(true)}
-      className="bg-slate-50 hover:bg-slate-100 p-6 rounded-lg transition-colors border-2 border-dashed border-slate-300 hover:border-emerald-300"
-    >
-      <div className="text-center">
-        <Users className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
-        <h3 className="font-semibold text-slate-900">Invite Members</h3>
-      </div>
-    </button>
-  </div>
-
+                <button
+                  onClick={() => setIsInviteDialogOpen(true)}
+                  className="bg-slate-50 hover:bg-slate-100 p-6 rounded-lg transition-colors border-2 border-dashed border-slate-300 hover:border-emerald-300"
+                >
+                  <div className="text-center">
+                    <Users className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
+                    <h3 className="font-semibold text-slate-900">Invite Members</h3>
+                  </div>
+                </button>
+              </div>
             )}
 
-            {/* Contributions Tab */}
             {activeTab === "contributions" && (
               <ul className="space-y-2">
                 {pool.contributionHistory.map((c) => (
@@ -292,11 +320,10 @@ const response = await poolAPI.post(
               </ul>
             )}
 
-            {/* Members Tab */}
             {activeTab === "members" && (
               <ul className="space-y-2">
                 {pool.members.map((m) => (
-                  <li key={crypto.randomUUID()} className="flex justify-between items-center border-b py-2">
+                  <li key={m.id} className="flex justify-between items-center border-b py-2">
                     <div className="flex items-center space-x-2">
                       <img src={m.avatar} alt={m.name} className="w-8 h-8 rounded-full" />
                       <span>{m.name}</span>
@@ -312,13 +339,22 @@ const response = await poolAPI.post(
                     )}
                   </li>
                 ))}
+                {/* Pending Invites */}
+                {invites.map((i) => (
+                  <li key={i.id} className="flex justify-between items-center border-b py-2 opacity-70">
+                    <div className="flex items-center space-x-2">
+                      <Users className="h-6 w-6 text-slate-500" />
+                      <span>{i.email} (Invited)</span>
+                    </div>
+                  </li>
+                ))}
               </ul>
             )}
           </div>
         </div>
       </main>
 
-      {/* Dialogs */}
+      {/* Contribute Dialog */}
       {isContributeDialogOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg">
@@ -330,16 +366,13 @@ const response = await poolAPI.post(
               className="border p-2 mb-4 w-full"
               placeholder="Amount in R"
             />
-            <button onClick={handleContribute} className="bg-emerald-600 text-white px-4 py-2 rounded">
-              Contribute
-            </button>
-            <button onClick={() => setIsContributeDialogOpen(false)} className="ml-2 px-4 py-2 rounded border">
-              Cancel
-            </button>
+            <button onClick={handleContribute} className="bg-emerald-600 text-white px-4 py-2 rounded">Contribute</button>
+            <button onClick={() => setIsContributeDialogOpen(false)} className="ml-2 px-4 py-2 rounded border">Cancel</button>
           </div>
         </div>
       )}
 
+      {/* Invite Dialog */}
       {isInviteDialogOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg">
@@ -351,12 +384,8 @@ const response = await poolAPI.post(
               className="border p-2 mb-4 w-full"
               placeholder="Member email"
             />
-            <button onClick={handleInviteMember} className="bg-emerald-600 text-white px-4 py-2 rounded">
-              Invite
-            </button>
-            <button onClick={() => setIsInviteDialogOpen(false)} className="ml-2 px-4 py-2 rounded border">
-              Cancel
-            </button>
+            <button onClick={handleInviteMember} className="bg-emerald-600 text-white px-4 py-2 rounded">Invite</button>
+            <button onClick={() => setIsInviteDialogOpen(false)} className="ml-2 px-4 py-2 rounded border">Cancel</button>
           </div>
         </div>
       )}

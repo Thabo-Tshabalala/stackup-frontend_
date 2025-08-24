@@ -65,6 +65,7 @@ const Dashboard: React.FC = () => {
         {tabs.map((tab) => (
           <button
             key={tab.name}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             onClick={() => setActiveTab(tab.name as any)}
             className={`py-2 px-4 font-medium transition ${
               activeTab === tab.name ? "border-b-2 border-black text-black" : "text-gray-600 hover:text-gray-800"
