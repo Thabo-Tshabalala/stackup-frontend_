@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from "react"
 import { QuickActions } from "@/components/QuickActions"
-import { ActivePools, Pool } from "@/components/ActivePools"
+import { ActivePools, Pool as PoolFromActive } from "@/components/ActivePools"
 import WalletPage from "@/components/WalletBalance"
 import RecentTransactions from "@/components/RecentTransactions"
 import InvitesPage from "@/components/Invites"
 import API from "@/app/api/api"
 import CreatePool from "./CreatePool"
-import PoolDetailsPage from "./pool-details-page"
+import PoolDetailsPage, { Pool as PoolDetailsType } from "./pool-details-page"
 
 const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
@@ -16,7 +16,7 @@ const Dashboard: React.FC = () => {
   >("QuickActions")
 
   const [user, setUser] = useState<{ firstName: string; email: string; imageUrl?: string } | null>(null)
-  const [selectedPool, setSelectedPool] = useState<Pool | null>(null)
+  const [selectedPool, setSelectedPool] = useState<PoolDetailsType | null>(null)
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -38,8 +38,21 @@ const Dashboard: React.FC = () => {
     { name: "Invites" },
   ]
 
-  const handleViewPool = (pool: Pool) => {
-    setSelectedPool(pool)
+  const handleViewPool = (pool: PoolFromActive) => {
+    // Transform contributionHistory to match PoolDetailsPage type
+    const transformedPool: PoolDetailsType = {
+      ...pool,
+      contributionHistory: (pool.contributionHistory || []).map((c) => ({
+        id: c.id,
+        date: c.date,
+        amount: c.amount,
+        memberId: c.id ?? "",
+        memberName: c.member ?? "",
+        memberAvatar: c.member ?? "",
+      })),
+    }
+
+    setSelectedPool(transformedPool)
     setActiveTab("PoolDetails")
   }
 
