@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { Users, Calendar, TrendingUp } from "lucide-react";
@@ -35,6 +35,7 @@ export interface Pool {
   members: Member[];
   contributionHistory: Contribution[];
   category: string;
+  paymentIdentifier: string; // <-- added
 }
 
 interface ActivePoolsProps {
@@ -51,25 +52,13 @@ export const ActivePools: React.FC<ActivePoolsProps> = ({ onViewPool }) => {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token found");
 
-        type BackendPool = {
-          id: number;
-          poolName: string;
-          description?: string;
-          members: any[];
-          goal: number;
-          currentAmount?: number;
-          startDate?: string;
-          endDate?: string;
-          contributionHistory?: any[];
-          category?: string;
-        };
-
-        const res = await axios.get<BackendPool[]>(
+        const res = await axios.get(
           `http://localhost:8080/api/pools/my-active`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        const mappedPools: Pool[] = res.data.map((pool) => ({
+       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mappedPools: Pool[] = res.data.map((pool: any) => ({
           id: pool.id,
           name: pool.poolName,
           description: pool.description || "No description",
@@ -80,8 +69,9 @@ export const ActivePools: React.FC<ActivePoolsProps> = ({ onViewPool }) => {
           nextPaymentDate: pool.endDate || "",
           startDate: pool.startDate || "",
           endDate: pool.endDate || "",
-          createdBy: "user-1",
-          members: pool.members.map((m: any) => ({
+          createdBy: pool.createdBy || "user-1",
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          members: (pool.members || []).map((m: any) => ({
             id: m.id,
             name: m.name,
             email: m.email,
@@ -91,6 +81,7 @@ export const ActivePools: React.FC<ActivePoolsProps> = ({ onViewPool }) => {
           })),
           contributionHistory: pool.contributionHistory || [],
           category: pool.category || "General",
+          paymentIdentifier: pool.paymentIdentifier || "", // <-- map from backend
         }));
 
         setPools(mappedPools);
@@ -137,14 +128,15 @@ export const ActivePools: React.FC<ActivePoolsProps> = ({ onViewPool }) => {
               </div>
             </div>
 
-            <div className="flex-shrink-0 text-right min-w-[80px]">
-              <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">
-                R{pool.currentAmount.toLocaleString("en-ZA")}
-              </p>
-              <p className="text-xs text-gray-500 whitespace-nowrap">
-                of R{pool.goal.toLocaleString("en-ZA")}
-              </p>
-            </div>
+<div className="flex-shrink-0 text-right min-w-[80px]">
+  <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+    R{pool?.currentAmount?.toLocaleString("en-ZA") ?? "0"}
+  </p>
+  <p className="text-xs text-gray-500 whitespace-nowrap">
+    of R{pool?.goal?.toLocaleString("en-ZA") ?? "0"}
+  </p>
+</div>
+
 
             <div className="flex-1 w-full md:max-w-[200px] mt-2 md:mt-0">
               <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
@@ -154,9 +146,7 @@ export const ActivePools: React.FC<ActivePoolsProps> = ({ onViewPool }) => {
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-gradient-to-r from-teal-500 to-teal-600 h-2 rounded-full transition-all duration-300"
-                  style={{
-                    width: `${pool.goal > 0 ? Math.round((pool.currentAmount / pool.goal) * 100) : 0}%`,
-                  }}
+                  style={{ width: `${pool.goal > 0 ? Math.round((pool.currentAmount / pool.goal) * 100) : 0}%` }}
                 />
               </div>
             </div>

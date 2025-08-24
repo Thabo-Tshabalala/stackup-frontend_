@@ -25,6 +25,7 @@ export interface Pool {
   currency: string
   frequency: string
   nextPaymentDate: string
+    paymentIdentifier?: string  // <-- add this
   members: Array<{
     id: string
     name: string
@@ -69,29 +70,49 @@ const handleContribute = async () => {
     return;
   }
 
+  if (!pool.paymentIdentifier) {
+    alert("Payment identifier is missing!");
+    return;
+  }
+
   try {
-    const response = await poolAPI.post<PoolResponse>(
-      `/contribute/${pool.id}`,
-      null, 
-      {
-        params: {
-          amount: Number(contributionAmount),
-          notes: "", 
-        },
-      }
-    );
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You are not authenticated");
+      return;
+    }
+const response = await poolAPI.post(
+  `/contribute`,
+  null, // no request body
+  {
+    params: {
+      poolPaymentId: pool.paymentIdentifier,
+      amount: Number(contributionAmount),
+      notes: ""
+    },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
 
-    const updatedPool: PoolResponse = response.data;
 
+    const updatedPool = response.data as PoolResponse;
 
-    pool.currentAmount = updatedPool.collectedAmount;
+    pool.paymentIdentifier = updatedPool.paymentIdentifier;
+
     setContributionAmount("");
     setIsContributeDialogOpen(false);
+
   } catch (err) {
     console.error(err);
     alert("Contribution failed, please try again");
   }
 };
+
+
+
+
 
 
 
