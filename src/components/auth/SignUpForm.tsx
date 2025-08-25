@@ -13,67 +13,71 @@ const SignUp = () => {
     lastName: '',
     password: '',
   });
-  const [error, setError] = useState<string>('');
-  const [success, setSuccess] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    setError(null);
+    setSuccess(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError(null);
+    setSuccess(null);
     setLoading(true);
 
     try {
-      await signupUser(form); 
+      await signupUser(form);
       setSuccess('Registration successful! Redirecting to login...');
       setTimeout(() => {
         router.push('/signin');
       }, 1500);
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
+    } catch (err) {
       const message =
-        error.response?.data?.message ||
-        error.message ||
+        (err && typeof err === 'object' && 'response' in err && (err as any).response?.data?.message) ||
+        (err && typeof err === 'object' && 'message' in err && (err as { message?: string }).message) ||
         'Registration failed. Please try again.';
-      setError(message);
+      setError(message as string);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-6 bg-white p-8 rounded-xl shadow-lg">
-        <div>
-          <h2 className="text-center text-3xl font-bold text-gray-900">
-            Sign up for StackUp
-          </h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
+=
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold text-gray-900">Create Account</h2>
+          <p className="text-sm text-gray-600 mt-1">Join StackUp to start saving together</p>
         </div>
 
-        {error && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm text-center">
-            {error}
-          </div>
-        )}
 
         {success && (
-          <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm text-center">
-            {success}
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-xs text-green-700 text-center">{success}</p>
           </div>
         )}
 
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-          {/* First & Last Name */}
-          <div className="flex space-x-4">
+
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-xs text-red-700 text-center">{error}</p>
+          </div>
+        )}
+
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+
+          <div className="flex gap-3">
             {(['firstName', 'lastName'] as const).map((field) => (
               <div key={field} className="flex-1">
-                <label htmlFor={field} className="block text-sm font-medium text-gray-700">
+                <label htmlFor={field} className="block text-xs font-medium text-gray-700 mb-1">
                   {field === 'firstName' ? 'First Name' : 'Last Name'}
                 </label>
                 <input
@@ -83,17 +87,16 @@ const SignUp = () => {
                   required
                   value={form[field]}
                   onChange={handleChange}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   placeholder={field === 'firstName' ? 'John' : 'Doe'}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
                 />
               </div>
             ))}
           </div>
 
-          {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
+            <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">
+              Email Address
             </label>
             <input
               id="email"
@@ -102,17 +105,13 @@ const SignUp = () => {
               required
               value={form.email}
               onChange={handleChange}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               placeholder="john@example.com"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
             />
           </div>
 
-          {/* Phone (Optional) */}
-          {/* Phone (Optional) */}
-          {/* If you want to add phone, update your User model accordingly */}
-          {/* Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1">
               Password
             </label>
             <input
@@ -122,33 +121,25 @@ const SignUp = () => {
               required
               value={form.password}
               onChange={handleChange}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               placeholder="••••••••"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
             />
           </div>
-
-          {/* Submit Button */}
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Creating Account...' : 'Sign Up'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            {loading ? 'Creating Account...' : 'Sign Up'}
+          </button>
         </form>
 
-        {/* Sign In Link */}
-        <div className="text-center mt-4">
-          <p className="text-gray-500 text-sm">Already have an account?</p>
-          <Link
-            href="/signin"
-            className="inline-block mt-2 px-4 py-2 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200 transition"
-          >
-            Sign In
+        <p className="text-center text-xs text-gray-600">
+          Already have an account?{' '}
+          <Link href="/signin" className="font-medium text-blue-600 hover:underline">
+            Sign in
           </Link>
-        </div>
+        </p>
       </div>
     </div>
   );
