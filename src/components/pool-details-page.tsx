@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import poolAPI from "@/app/api/poolApi";
 import { PoolResponse } from "@/models/PoolResponse";
@@ -16,6 +14,7 @@ import {
   UserMinus,
   ArrowDownLeft,
 } from "lucide-react";
+import { externalApiFetch } from "@/app/api/externalApi";
 
 export interface Pool {
   id: number;
@@ -100,8 +99,6 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
   const [editPoolGoal, setEditPoolGoal] = useState(pool.goal.toString());
   const [invites, setInvites] = useState<Invite[]>([]);
 
-
-
   const progressPercentage =
     (transformedPool.currentAmount / transformedPool.goal) * 100;
   const remainingAmount =
@@ -110,79 +107,48 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
     (m) => m.email === localStorage.getItem("userEmail")
   );
 
-interface Contribution {
-  id: string;
-  date: string;
-  amount: number;
-  memberId: string;
-  memberName: string;
-  memberAvatar: string;
-}
-
-const [contributions, setContributions] = useState<Contribution[]>([]);
-const [loadingContribs, setLoadingContribs] = useState(true);
-
-useEffect(() => {
-  const fetchContributions = async () => {
-    try {
-      const API_TOKEN =
-        "ee4786b66aaa953af6691317340bc0c1aff5d87e80c8518ad43e40731f19718f";
-      const apiUserId = pool.id;
-
-      console.log("[fetchContributions] Fetching contributions for pool:", apiUserId);
-
-      const response = await fetch(
-        `https://seal-app-qp9cc.ondigitalocean.app/api/v1/${apiUserId}/transactions`,
-        {
-          headers: {
-            Authorization: `Bearer ${API_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      console.log("[fetchContributions] Response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch contributions: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log("[fetchContributions] Raw data:", data);
-
-      // Transform contributions
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const contribs: Contribution[] = (data.transactions || []).map((t: any) => ({
-  id: t.id,
-  date: new Date(t.createdAt).toLocaleDateString("en-ZA", {
-    day: "2-digit",
-    month: "short",
-  }),
-  amount: t.value,
-  memberId: t.userId,
-  memberName: t.txType, // or extract the name from txType if needed
-  memberAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(t.txType)}`, // fallback
-}));
-
-
-      console.log("[fetchContributions] Transformed contributions:", contribs);
-
-      setContributions(contribs);
-    } catch (err) {
-      console.error("[fetchContributions] Error fetching contributions:", err);
-      setContributions([]);
-    } finally {
-      setLoadingContribs(false);
-    }
-  };
-
-  if (pool?.id) {
-    fetchContributions();
+  interface Contribution {
+    id: string;
+    date: string;
+    amount: number;
+    memberId: string;
+    memberName: string;
+    memberAvatar: string;
   }
-}, [pool.id]);
 
-  // ---- Handlers ----
+  const [contributions, setContributions] = useState<Contribution[]>([]);
+  const [loadingContribs, setLoadingContribs] = useState(true);
+
+  useEffect(() => {
+    const fetchContributions = async () => {
+      try {
+        const apiUserId = pool.id;
+        const data = await externalApiFetch(`/${apiUserId}/transactions`);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const contribs: Contribution[] = (data.transactions || []).map((t: any) => ({
+          id: t.id,
+          date: new Date(t.createdAt).toLocaleDateString("en-ZA", {
+            day: "2-digit",
+            month: "short",
+          }),
+          amount: t.value,
+          memberId: t.userId,
+          memberName: t.txType,
+          memberAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(t.txType)}`,
+        }));
+        setContributions(contribs);
+      } catch (err) {
+        setContributions([]);
+      } finally {
+        setLoadingContribs(false);
+      }
+    };
+
+    if (pool?.id) {
+      fetchContributions();
+    }
+  }, [pool.id]);
+
   const handleContribute = async () => {
     if (!contributionAmount || isNaN(Number(contributionAmount))) {
       alert("Please enter a valid amount");
@@ -220,7 +186,6 @@ const contribs: Contribution[] = (data.transactions || []).map((t: any) => ({
       setContributionAmount("");
       setIsContributeDialogOpen(false);
     } catch (err) {
-      console.error(err);
       alert("Contribution failed, please try again");
     }
   };
@@ -271,7 +236,6 @@ const contribs: Contribution[] = (data.transactions || []).map((t: any) => ({
       ]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      console.error("Error inviting member:", err);
       const message = err.response?.data || err.message;
       alert("Failed to invite member: " + message);
     } finally {
@@ -281,28 +245,19 @@ const contribs: Contribution[] = (data.transactions || []).map((t: any) => ({
   };
 
   const handleEditPool = () => {
-    console.log("Editing pool:", {
-      name: editPoolName,
-      description: editPoolDescription,
-      goal: editPoolGoal,
-    });
     setIsEditPoolDialogOpen(false);
     setIsSettingsOpen(false);
   };
 
   const handleDeletePool = () => {
-    console.log("Deleting pool");
     setIsDeleteConfirmOpen(false);
     setIsSettingsOpen(false);
   };
 
-  const handleRemoveMember = (memberId: string) => {
-    console.log("Removing member:", memberId);
-  };
+  const handleRemoveMember = (memberId: string) => {};
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <div>
@@ -350,9 +305,7 @@ const contribs: Contribution[] = (data.transactions || []).map((t: any) => ({
         </div>
       </header>
 
-      {/* Main content */}
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Pool Overview Cards */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
             <div className="flex justify-between items-center mb-3">
@@ -415,7 +368,6 @@ const contribs: Contribution[] = (data.transactions || []).map((t: any) => ({
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200">
           <div className="border-b border-slate-200">
             <nav className="flex space-x-8 px-6">
@@ -450,16 +402,15 @@ const contribs: Contribution[] = (data.transactions || []).map((t: any) => ({
                   </div>
                 </button>
 
-<button
-  onClick={() => setIsInviteDialogOpen(true)}
-  className="bg-slate-50 hover:bg-slate-100 p-6 rounded-lg transition-colors border-2 border-dashed border-slate-300 hover:border-emerald-300 text-black" // add text-black here
->
-  <div className="text-center">
-    <Users className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
-    <h3 className="font-semibold">Invite Members</h3>
-  </div>
-</button>
-
+                <button
+                  onClick={() => setIsInviteDialogOpen(true)}
+                  className="bg-slate-50 hover:bg-slate-100 p-6 rounded-lg transition-colors border-2 border-dashed border-slate-300 hover:border-emerald-300 text-black"
+                >
+                  <div className="text-center">
+                    <Users className="h-8 w-8 mx-auto mb-2 text-emerald-600" />
+                    <h3 className="font-semibold">Invite Members</h3>
+                  </div>
+                </button>
               </div>
             )}
 
@@ -522,33 +473,26 @@ const contribs: Contribution[] = (data.transactions || []).map((t: any) => ({
               </div>
             )}
 
-
             {activeTab === "members" && (
               <ul className="space-y-2">
-      {transformedPool.members.map((m) => {
-  console.log("[render member]", m)
-  return (
-    <li key={m.id} className="flex justify-between items-center border-b py-2">
-      <div className="flex items-center space-x-2">
-        <img src={m.avatar} alt={m.name} className="w-8 h-8 rounded-full" />
-      <span className="text-black font-medium">{m.name}</span>
-      </div>
-      {currentUser?.isCreator && !m.isCreator && (
-        <button
-          onClick={() => handleRemoveMember(m.id)}
-          className="text-red-600 hover:text-red-800 flex items-center space-x-1"
-        >
-          <UserMinus className="h-4 w-4" />
-          <span>Remove</span>
-        </button>
-      )}
-    </li>
-  )
-})}
+                {transformedPool.members.map((m) => (
+                  <li key={m.id} className="flex justify-between items-center border-b py-2">
+                    <div className="flex items-center space-x-2">
+                      <img src={m.avatar} alt={m.name} className="w-8 h-8 rounded-full" />
+                      <span className="text-black font-medium">{m.name}</span>
+                    </div>
+                    {currentUser?.isCreator && !m.isCreator && (
+                      <button
+                        onClick={() => handleRemoveMember(m.id)}
+                        className="text-red-600 hover:text-red-800 flex items-center space-x-1"
+                      >
+                        <UserMinus className="h-4 w-4" />
+                        <span>Remove</span>
+                      </button>
+                    )}
+                  </li>
+                ))}
 
-
-              
-                {/* Pending Invites */}
                 {invites.map((i) => (
                   <li key={i.id} className="flex justify-between items-center border-b py-2 opacity-70">
                     <div className="flex items-center space-x-2">
@@ -563,7 +507,6 @@ const contribs: Contribution[] = (data.transactions || []).map((t: any) => ({
         </div>
       </main>
 
-      {/* Contribute Dialog */}
       {isContributeDialogOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg">
@@ -581,7 +524,6 @@ const contribs: Contribution[] = (data.transactions || []).map((t: any) => ({
         </div>
       )}
 
-      {/* Invite Dialog */}
       {isInviteDialogOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg">

@@ -1,4 +1,3 @@
-// src/components/CreatePool.tsx
 'use client';
 import { useState, useEffect } from 'react';
 import type { Pool } from '@/models/Pool';
@@ -20,11 +19,6 @@ const CreatePool: React.FC<CreatePoolProps> = ({ onCreate }) => {
   const [success, setSuccess] = useState('');
   const [apiUserId, setApiUserId] = useState<string | null>(null);
 
-  const API_TOKEN =
-    process.env.NEXT_PUBLIC_API_TOKEN ||
-    'ee4786b66aaa953af6691317340bc0c1aff5d87e80c8518ad43e40731f19718f';
-
-  // Fetch current user's API ID from /me endpoint
   useEffect(() => {
     const fetchUserId = async () => {
       try {
@@ -32,7 +26,7 @@ const CreatePool: React.FC<CreatePoolProps> = ({ onCreate }) => {
         const userData = meRes.data as { apiUserId: string };
         setApiUserId(userData.apiUserId);
       } catch (err) {
-        console.error('Failed to get API user ID:', err);
+        setError('Failed to get API user ID');
       }
     };
     fetchUserId();
@@ -55,7 +49,7 @@ const CreatePool: React.FC<CreatePoolProps> = ({ onCreate }) => {
       frequency,
       startDate,
       endDate,
-      creator: { apiUserId }, // use real API user ID
+      creator: { apiUserId },
       members: members.split(',').map(m => ({ email: m.trim() })),
     };
 
@@ -64,9 +58,7 @@ const CreatePool: React.FC<CreatePoolProps> = ({ onCreate }) => {
       setSuccess('Pool created successfully!');
       setError('');
       if (onCreate) onCreate(response.data as Pool);
-      console.log('Created pool:', response.data);
     } catch (err) {
-      console.error(err);
       setError('Failed to create pool');
       setSuccess('');
     }
@@ -78,7 +70,6 @@ const CreatePool: React.FC<CreatePoolProps> = ({ onCreate }) => {
       {error && <p className="text-red-500 text-sm">{error}</p>}
       {success && <p className="text-green-500 text-sm">{success}</p>}
 
-      {/* Pool Name */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Pool Name*</label>
         <input
@@ -90,7 +81,6 @@ const CreatePool: React.FC<CreatePoolProps> = ({ onCreate }) => {
         />
       </div>
 
-      {/* Goal Amount */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Goal Amount (ZAR)*</label>
         <input
@@ -104,7 +94,6 @@ const CreatePool: React.FC<CreatePoolProps> = ({ onCreate }) => {
         />
       </div>
 
-      {/* Frequency */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Contribution Frequency</label>
         <div className="flex space-x-2">
@@ -124,7 +113,6 @@ const CreatePool: React.FC<CreatePoolProps> = ({ onCreate }) => {
         </div>
       </div>
 
-      {/* Start / End Dates */}
       <div className="flex gap-2">
         <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 mb-1">Start Date*</label>
@@ -146,7 +134,6 @@ const CreatePool: React.FC<CreatePoolProps> = ({ onCreate }) => {
         </div>
       </div>
 
-      {/* Invite Members */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Invite Members (comma separated emails)

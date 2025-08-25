@@ -1,9 +1,9 @@
-// components/RecentTransactions.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import API from '@/app/api/api';
+import { externalApiFetch } from '@/app/api/externalApi'; 
 
 interface Transaction {
   id: string;
@@ -21,29 +21,11 @@ export const RecentTransactions: React.FC = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        // 1. Get current user
         const meRes = await API.get('/me');
         const userData = meRes.data as { apiUserId: string };
         const apiUserId = userData.apiUserId;
+        const txData = await externalApiFetch(`/${apiUserId}/transactions`);
 
-        // 2. Fetch transactions from real API
-        const API_TOKEN = 'ee4786b66aaa953af6691317340bc0c1aff5d87e80c8518ad43e40731f19718f'; // Move to .env later
-
-        const response = await fetch(
-          `https://seal-app-qp9cc.ondigitalocean.app/api/v1/${apiUserId}/transactions`, // 🔥 Fixed: Removed extra space
-          {
-            headers: {
-              Authorization: `Bearer ${API_TOKEN}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        if (!response.ok) throw new Error('Failed to fetch transactions');
-
-        const txData = await response.json();
-
-        // 3. Map API data to our format
         const mapped: Transaction[] = (txData.transactions || []).map((t: unknown) => {
           const tx = t as {
             id: string;
@@ -65,11 +47,10 @@ export const RecentTransactions: React.FC = () => {
           };
         });
 
-        // Only show last 5 transactions
         setTransactions(mapped.slice(0, 5));
       } catch (err) {
         console.error('Error fetching transactions:', err);
-        setTransactions([]); // Show empty on error
+        setTransactions([]);
       } finally {
         setLoading(false);
       }
@@ -130,7 +111,6 @@ export const RecentTransactions: React.FC = () => {
                 key={tx.id}
                 className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors"
               >
-                {/* Left: Avatar + Info */}
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <div
@@ -157,8 +137,6 @@ export const RecentTransactions: React.FC = () => {
                     <p className="text-xs text-gray-500">{category}</p>
                   </div>
                 </div>
-
-                {/* Right: Amount + Date */}
                 <div className="text-right">
                   <p className={`font-semibold ${isSent ? 'text-red-600' : 'text-green-600'}`}>
                     {isSent ? '-' : '+'}R{tx.amount.toFixed(2)}

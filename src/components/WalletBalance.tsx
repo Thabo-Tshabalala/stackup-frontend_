@@ -4,6 +4,27 @@ import { useState, useEffect } from "react";
 import { Eye, EyeOff, Copy, QrCode } from "lucide-react";
 import API from "@/app/api/api";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN;
+
+async function externalApiFetch(path: string, options: RequestInit = {}) {
+  if (!API_BASE_URL || !API_TOKEN) {
+    throw new Error("API base URL or token missing in environment");
+  }
+  const url = `${API_BASE_URL}${path.startsWith("/") ? path : "/" + path}`;
+  const headers = {
+    Authorization: `Bearer ${API_TOKEN}`,
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+  };
+  const response = await fetch(url, { ...options, headers });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`External API error: ${response.status} - ${errorText}`);
+  }
+  return response.json();
+}
+
 const WalletPage = () => {
   const [tab, setTab] = useState<"send" | "receive">("send");
   const [recipientId, setRecipientId] = useState("");
@@ -17,10 +38,6 @@ const WalletPage = () => {
     email: string;
     imageUrl?: string;
   } | null>(null);
-
-  const API_TOKEN =
-    process.env.NEXT_PUBLIC_API_TOKEN ||
-    "ee4786b66aaa953af6691317340bc0c1aff5d87e80c8518ad43e40731f19718f";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,28 +54,11 @@ const WalletPage = () => {
         );
         const apiUserId = (userData as { apiUserId: string }).apiUserId;
 
-        const userRes = await fetch(
-          `https://seal-app-qp9cc.ondigitalocean.app/api/v1/users/${apiUserId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${API_TOKEN}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        const userDataRes = await userRes.json();
+
+        const userDataRes = await externalApiFetch(`/users/${apiUserId}`);
         setPaymentId(userDataRes.user?.paymentIdentifier || "");
 
-        const balanceRes = await fetch(
-          `https://seal-app-qp9cc.ondigitalocean.app/api/v1/${apiUserId}/balance`,
-          {
-            headers: {
-              Authorization: `Bearer ${API_TOKEN}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        const balanceData = await balanceRes.json();
+        const balanceData = await externalApiFetch(`/${apiUserId}/balance`);
         const zarToken = balanceData.tokens?.find(
           (t: { name: string; balance: string }) => t.name === "L ZAR Coin"
         );
@@ -92,7 +92,7 @@ const WalletPage = () => {
 
       <div className="flex flex-col md:flex-row gap-6">
         <div className="flex-1 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-          {/* Tabs */}
+   
           <div className="flex border-b border-gray-200">
             <button
               className={`flex-1 py-4 text-center font-semibold transition ${
