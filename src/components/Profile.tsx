@@ -4,7 +4,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User } from '@/models/User';
-import Footer from '@/components/Footer';
 import API from '@/app/api/api';
 
 const ProfilePage = () => {
@@ -232,7 +231,7 @@ const ProfilePage = () => {
             </div>
           </form>
 
-          {/* Debug Section (Optional) */}
+          {/* Debug Section come back here*/}
           <div className="mt-8">
             <h3 className="text-sm font-semibold text-gray-800 mb-2">Account Details (Debug)</h3>
             <pre className="bg-gray-100 p-3 rounded text-xs text-gray-800 overflow-auto max-h-32">
@@ -240,9 +239,6 @@ const ProfilePage = () => {
             </pre>
           </div>
         </div>
-
-        {/* Footer */}
-        <Footer />
       </main>
     </div>
   );

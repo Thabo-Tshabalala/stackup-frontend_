@@ -1,4 +1,3 @@
-// app/signup/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -31,7 +30,7 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      await signupUser(form); // Your real API call
+      await signupUser(form); 
       setSuccess('Registration successful! Redirecting to login...');
       setTimeout(() => {
         router.push('/signin');
