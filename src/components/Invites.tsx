@@ -21,21 +21,38 @@ const InvitesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchInvites = async () => {
-      try {
-        const res = await getMyInvites();
-        const data = res.data;
-        setInvites(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error('Failed to fetch invites:', err);
-        setError('Failed to load invites.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchInvites();
-  }, []);
+useEffect(() => {
+  const fetchInvites = async () => {
+    try {
+      const res = await getMyInvites();
+      const data = Array.isArray(res.data) ? res.data : [];
+
+      // Map nested pool fields to flat structure
+      const mappedInvites = data.map((invite: any) => ({
+        id: invite.id,
+        poolName: invite.pool?.poolName || "Unnamed Pool",
+        creatorName: invite.pool?.creator
+          ? `${invite.pool.creator.firstName || ""} ${invite.pool.creator.lastName || ""}`
+          : "Unknown Creator",
+        goal: invite.pool?.goal || 0,
+        frequency: invite.pool?.frequency || "N/A",
+        contributionPerMember: invite.pool?.contributionPerMember || 0,
+        startDate: invite.pool?.startDate || null,
+        endDate: invite.pool?.endDate || null,
+        status: invite.status || "PENDING",
+      }));
+
+      setInvites(mappedInvites);
+    } catch (err) {
+      console.error("Failed to fetch invites:", err);
+      setError("Failed to load invites.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchInvites();
+}, []);
+
 
   const handleAction = async (inviteId: string, action: 'ACCEPTED' | 'DECLINED') => {
     try {
@@ -92,21 +109,24 @@ const InvitesPage: React.FC = () => {
                 <span>
                   <strong>By:</strong> {invite.creatorName}
                 </span>
-                <span>
-                  <strong>Goal:</strong> R{invite.goal.toFixed(2)}
-                </span>
-                <span>
-                  <strong>Yours:</strong> R{invite.contributionPerMember.toFixed(2)}
-                </span>
+<span>
+  <strong>Goal:</strong> R{invite.goal ? invite.goal.toFixed(2) : '0.00'}
+</span>
+<span>
+  <strong>Yours:</strong> R{invite.contributionPerMember ? invite.contributionPerMember.toFixed(2) : '0.00'}
+</span>
+<span>
+  <strong>From:</strong> {invite.startDate ? new Date(invite.startDate).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' }) : 'N/A'}
+</span>
+<span>
+  <strong>To:</strong> {invite.endDate ? new Date(invite.endDate).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' }) : 'N/A'}
+</span>
+
+
                 <span>
                   <strong>Every:</strong> {invite.frequency}
                 </span>
-                <span className="sm:col-span-1">
-                  <strong>From:</strong> {new Date(invite.startDate).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' })}
-                </span>
-                <span>
-                  <strong>To:</strong> {new Date(invite.endDate).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' })}
-                </span>
+         
               </div>
             </div>
 
