@@ -15,7 +15,6 @@ import {
   UserMinus,
   X,
   Mail,
-  AlertCircle,
 } from "lucide-react";
 import { externalApiFetch } from "@/app/api/externalApi";
 import PayoutOrder, { PayoutMember } from "@/components/PayoutOrder";
@@ -91,11 +90,7 @@ const transformMembers = (members: RawMember[], pool: Pool) => {
       "Unknown";
 
     return {
-      id: m.localId !== undefined
-        ? m.localId.toString()
-        : m.apiUserId !== undefined
-        ? m.apiUserId.toString()
-        : index.toString(),
+      id: m.apiUserId?.toString() ?? m.localId?.toString() ?? m.email ?? index.toString(), // ✅ ensure same as backend
       name: fullName,
       email: m.email ?? "",
       avatar: m.avatar?.startsWith("http")
@@ -106,6 +101,8 @@ const transformMembers = (members: RawMember[], pool: Pool) => {
     };
   });
 };
+
+
 
 // --- Main Component ---
 const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
@@ -123,9 +120,6 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isEditPoolDialogOpen, setIsEditPoolDialogOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [editPoolName, setEditPoolName] = useState(pool.name);
-  const [editPoolDescription, setEditPoolDescription] = useState(pool.description);
-  const [editPoolGoal, setEditPoolGoal] = useState(pool.goal.toString());
   const [invites, setInvites] = useState<Invite[]>([]);
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [loadingContribs, setLoadingContribs] = useState(true);
@@ -161,9 +155,27 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
     if (pool?.id) fetchContributions();
   }, [pool.id]);
 
-  // --- Handle Actions ---
+  // --- Calculate expected contribution per member dynamically ---
+  const contributionPerMember =
+    transformedPool.members.length > 0
+      ? transformedPool.goal / transformedPool.members.length
+      : 0;
+
+  // --- Get each member's remaining contribution ---
+const memberRemaining = (id: string) => {
+  const contributed = pool.contributionHistory
+    .filter(c => c.id === id)
+    .reduce((sum, c) => sum + c.amount, 0);
+
+  return contributionPerMember - contributed;
+};
+
+  // --- Handle Contribution ---
   const handleContribute = async () => {
-    if (!contributionAmount || isNaN(Number(contributionAmount))) return alert("Enter valid amount");
+    const remaining = currentUser ? memberRemaining(currentUser.id) : 0;
+    const amount = Number(contributionAmount);
+
+    if (!amount || isNaN(amount)) return alert("Enter valid amount");
     if (!transformedPool.paymentIdentifier) return alert("Payment identifier missing");
 
     try {
@@ -174,12 +186,22 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
         `/contribute`,
         null,
         {
-          params: { poolPaymentId: transformedPool.paymentIdentifier, amount: Number(contributionAmount), notes: "" },
+          params: { poolPaymentId: transformedPool.paymentIdentifier, amount, notes: "" },
           headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      transformedPool.currentAmount += Number(contributionAmount);
+      // Update local state
+      transformedPool.currentAmount += amount;
+      transformedPool.contributionHistory.push({
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        amount,
+        memberId: currentUser!.id,
+        memberName: currentUser!.name,
+        memberAvatar: currentUser!.avatar,
+      });
+
       setContributionAmount("");
       setIsContributeDialogOpen(false);
     } catch {
@@ -187,6 +209,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
     }
   };
 
+  // --- Handle Invite ---
   const handleInviteMember = async () => {
     if (!newMemberEmail || !/\S+@\S+\.\S+/.test(newMemberEmail)) return alert("Enter valid email");
     try {
@@ -203,6 +226,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
     }
   };
 
+  // --- Remove member ---
   const handleRemoveMember = (memberId: string) => {
     if (window.confirm("Are you sure you want to remove this member?")) {
       alert(`Member ${memberId} removed.`);
@@ -211,11 +235,26 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
 
   // --- Prepare Payout Members ---
   const payoutMembers: PayoutMember[] = transformedPool.members.map((m, index) => {
+    const paid = transformedPool.contributionHistory
+      .filter(c => c.memberId === m.id)
+      .reduce((sum, c) => sum + c.amount, 0);
+
     let status: "paid" | "next" | "pending" = "pending";
-    if (index < 2) status = "paid"; // example logic, first 2 paid
-    else if (index === 2) status = "next"; // next in line
-    return { id: m.id, name: m.name, avatar: m.avatar, amount: `R${m.contribution.toLocaleString() || 0}`, status, position: index + 1 };
+    if (paid >= contributionPerMember && contributionPerMember > 0) status = "paid";
+
+    return {
+      id: m.id,
+      name: m.name,
+      avatar: m.avatar,
+      amount: `R${paid.toLocaleString() || 0}`,
+      status,
+      position: index + 1
+    };
   });
+
+  // --- Mark next pending ---
+  const nextIndex = payoutMembers.findIndex(m => m.status === "pending");
+  if (nextIndex !== -1) payoutMembers[nextIndex].status = "next";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -246,8 +285,9 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
         </div>
       </header>
 
+      {/* Main */}
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Stats Grid */}
+        {/* Stats */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Total Goal" value={`R${transformedPool.goal.toLocaleString()}`} icon={<Target className="h-5 w-5 text-blue-600" />} bgColor="bg-blue-50" />
           <StatCard label="Current Amount" value={`R${transformedPool.currentAmount.toLocaleString()}`} subValue={`R${remainingAmount.toLocaleString()} remaining`} valueColor="text-green-600" icon={<DollarSign className="h-5 w-5 text-green-600" />} bgColor="bg-green-50" />
@@ -271,10 +311,11 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
           <div className="p-6 space-y-6">
             {activeTab === "overview" && (
               <div className="grid gap-6 md:grid-cols-2">
-                <ActionCard icon={<Plus className="h-8 w-8 text-green-600" />} title="Make a Contribution" onClick={() => setIsContributeDialogOpen(true)} />
+                <ActionCard icon={<Plus className="h-8 w-8 text-green-600" />} title={`Contribute `} onClick={() => setIsContributeDialogOpen(true)} />
                 <ActionCard icon={<Users className="h-8 w-8 text-teal-600" />} title="Invite Members" onClick={() => setIsInviteDialogOpen(true)} />
               </div>
             )}
+
             {activeTab === "contributions" && (
               <div>
                 {loadingContribs ? <p className="text-gray-500 text-sm">Loading contributions...</p> : contributions.length === 0 ? <p className="text-gray-500 text-sm text-center py-4">No contributions yet</p> : (
@@ -298,6 +339,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
                 )}
               </div>
             )}
+
             {activeTab === "members" && (
               <ul className="space-y-2">
                 {transformedPool.members.map((m) => (
@@ -306,6 +348,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
                       <img src={m.avatar} alt={m.name} className="w-9 h-9 rounded-full" />
                       <span className="font-medium text-gray-900">{m.name}</span>
                     </div>
+                    <span className="text-sm text-gray-600">Owes: R{memberRemaining(m.id).toFixed(2)}</span>
                     {currentUser?.isCreator && !m.isCreator && (
                       <button onClick={() => handleRemoveMember(m.id)} className="text-red-600 hover:text-red-800 text-sm flex items-center space-x-1">
                         <UserMinus className="h-4 w-4" /> Remove
@@ -329,16 +372,22 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
           </div>
         </div>
 
-        {/* === Payout Order (Stokvel) Section === */}
+        {/* Payout Section */}
         <PayoutOrder members={payoutMembers} nextUpName={payoutMembers.find(m => m.status === "next")?.name} />
       </main>
 
-      {/* --- Modals (Contribute, Invite, Delete) --- */}
+      {/* Modals */}
       {isContributeDialogOpen && (
         <Modal title="Contribute to Pool" onClose={() => setIsContributeDialogOpen(false)}>
           <div className="space-y-4">
             <label className="block text-sm font-medium text-gray-700">Amount (ZAR)</label>
             <input type="number" value={contributionAmount} onChange={(e) => setContributionAmount(e.target.value)} placeholder="Enter amount" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+ <p className="text-gray-500 text-sm">
+  Suggested contribution: R{contributionPerMember.toFixed(2)}.  
+  If you contribute more, the extra will be refunded as new members join.
+</p>
+
+
             <div className="flex justify-end space-x-3 pt-4">
               <button onClick={() => setIsContributeDialogOpen(false)} className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium rounded-lg">Cancel</button>
               <button onClick={handleContribute} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow">Contribute</button>
@@ -389,7 +438,6 @@ const ActionCard: React.FC<{ icon: JSX.Element; title: string; onClick: () => vo
   </div>
 );
 
-// --- Modal Wrapper ---
 const Modal: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({ title, onClose, children }) => (
   <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
     <div className="bg-white p-6 rounded-xl w-full max-w-md relative">

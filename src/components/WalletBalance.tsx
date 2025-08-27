@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Eye, EyeOff, Copy, QrCode } from 'lucide-react';
+import poolAPI from '@/app/api/poolApi';
 import API from '@/app/api/api';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -83,16 +84,50 @@ const WalletPage = () => {
       .catch(() => alert('Copy failed.'));
   };
 
-  const handleSendSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!recipientId || !amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      alert('Please enter a valid recipient ID and amount.');
-      return;
+// --- Handle Send ---
+const handleSendSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  console.log("Sending money initiated...");
+  console.log("Recipient ID:", recipientId);
+  console.log("Amount:", amount);
+
+  if (!recipientId || !amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+    console.warn("Invalid recipient ID or amount");
+    return alert("Enter a valid recipient ID and amount");
+  }
+
+  try {
+    const token = localStorage.getItem("token");
+    console.log("Token from localStorage:", token);
+
+    if (!token) throw new Error("Unauthorized");
+
+// Make sure THIS is poolAPI, not API
+await poolAPI.post(
+  "/send",
+  {},
+  {
+    params: { recipientId, amount: Number(amount) }
+  }
+);
+
+
+    alert(`Successfully sent R${parseFloat(amount).toFixed(2)} to ${recipientId}`);
+    setRecipientId("");
+    setAmount("");
+  } catch (err: any) {
+    console.error("Send failed:", err);
+    if (err.response) {
+      console.error("Response data:", err.response.data);
+      console.error("Response status:", err.response.status);
+      console.error("Response headers:", err.response.headers);
     }
-    alert(`Sending R${parseFloat(amount).toFixed(2)} to ${recipientId}`);
-    setRecipientId('');
-    setAmount('');
-  };
+    alert("Send failed. Check console logs for details.");
+  }
+};
+
+
 
   return (
     <div className="space-y-6">
