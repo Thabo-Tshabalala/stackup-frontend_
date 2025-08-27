@@ -1,8 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import { useState, useEffect } from 'react';
 import { Eye, EyeOff, Copy, QrCode } from 'lucide-react';
 import poolAPI from '@/app/api/poolApi';
 import API from '@/app/api/api';
+import { QRCodeCanvas } from "qrcode.react";
+
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN;
@@ -199,28 +202,42 @@ await poolAPI.post(
               </form>
             )}
 
-            {tab === 'receive' && (
-              <div className="space-y-4 text-center">
+{tab === 'receive' && (
+  <div className="space-y-4 text-center">
 
-                <div className="w-16 h-16 mx-auto bg-gray-100 rounded-lg flex items-center justify-center text-gray-600">
-                  <QrCode className="w-7 h-7" />
-                </div>
+    <div className="flex flex-col items-center">
+      {paymentId ? (
+        <QRCodeCanvas 
+          value={paymentId} 
+          size={160} 
+          bgColor="#ffffff" 
+          fgColor="#000000"
+          level="Q"
+          includeMargin={true}
+        />
+      ) : (
+        <div className="w-40 h-40 flex items-center justify-center bg-gray-100 text-gray-500 rounded-lg">
+          No ID
+        </div>
+      )}
+    </div>
 
-                <p className="text-sm text-gray-800">Share your ID to receive payments</p>
+    <p className="text-sm text-gray-800">Scan this QR to pay you</p>
 
-                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded font-mono text-xs text-gray-900 break-all">
-                  {shortPaymentId}
-                </div>
+    <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded font-mono text-xs text-gray-900 break-all">
+      {shortPaymentId}
+    </div>
 
-                <button
-                  onClick={copyPaymentId}
-                  disabled={!paymentId}
-                  className="w-full py-2 text-xs font-medium text-blue-700 border border-blue-300 bg-blue-50 hover:bg-blue-100 disabled:bg-gray-50 disabled:text-gray-400 rounded transition"
-                >
-                  Copy Payment ID
-                </button>
-              </div>
-            )}
+    <button
+      onClick={copyPaymentId}
+      disabled={!paymentId}
+      className="w-full py-2 text-xs font-medium text-blue-700 border border-blue-300 bg-blue-50 hover:bg-blue-100 disabled:bg-gray-50 disabled:text-gray-400 rounded transition"
+    >
+      Copy Payment ID
+    </button>
+  </div>
+)}
+
           </div>
         </div>
 
