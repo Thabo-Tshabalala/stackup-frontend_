@@ -537,7 +537,7 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
           </div>
         </div>
 
-        {/* Payout Section */}
+        {/* Payout Section . fixing merge i think*/}
         <PayoutOrder
           members={payoutMembers}
           nextUpName={payoutMembers.find((m) => m.status === "next")?.name}
