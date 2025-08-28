@@ -18,36 +18,42 @@ const SignIn = () => {
     if (error) setError(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError(null);
+  setLoading(true);
 
-    try {
-      console.log('Logging in with:', formData);
+  try {
+    console.log('Logging in with:', formData);
 
-      const res = await API.post<{ token?: string; accessToken?: string }>('/login', {
-        email: formData.emailOrPhone,
-        password: formData.password,
-      });
+    const res = await API.post<{ token?: string; accessToken?: string }>('/login', {
+      email: formData.emailOrPhone.trim(),
+      password: formData.password,
+    });
 
-      const token = res.data.token || res.data.accessToken;
-      if (!token) throw new Error('No token received');
+    const token = res.data.token || res.data.accessToken;
+    if (!token) throw new Error('No token received');
 
-      localStorage.setItem('token', token);
+    // Save token in localStorage
+    localStorage.setItem('token', token);
+
+    // Give components (like header) a small moment to detect the token
+    setTimeout(() => {
       router.push('/dashboard');
-    } catch (err) {
-      console.error('Login error:', err);
-      const message =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (err && typeof err === 'object' && 'response' in err && (err as any).response?.data?.message) ||
-        (err && typeof err === 'object' && 'message' in err && (err as { message?: string }).message) ||
-        'Login failed';
-      setError(message as string);
-    } finally {
-      setLoading(false);
-    }
-  };
+    }, 50); // 50ms delay is usually enough
+
+  } catch (err) {
+    console.error('Login error:', err);
+    const message =
+      (err as any)?.response?.data?.message ||
+      (err as Error)?.message ||
+      'Login failed';
+    setError(message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
