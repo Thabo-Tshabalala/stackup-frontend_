@@ -12,6 +12,7 @@ const SignUp = () => {
     firstName: '',
     lastName: '',
     password: '',
+    phoneNumber: '', // <-- added
   });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -51,12 +52,10 @@ const SignUp = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
-=
         <div className="text-center">
           <h2 className="text-2xl font-semibold text-gray-900">Create Account</h2>
           <p className="text-sm text-gray-600 mt-1">Join StackUp to start saving together</p>
         </div>
-
 
         {success && (
           <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -64,16 +63,13 @@ const SignUp = () => {
           </div>
         )}
 
-
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-xs text-red-700 text-center">{error}</p>
           </div>
         )}
 
-
         <form onSubmit={handleSubmit} className="space-y-5">
-
           <div className="flex gap-3">
             {(['firstName', 'lastName'] as const).map((field) => (
               <div key={field} className="flex-1">
@@ -111,6 +107,22 @@ const SignUp = () => {
           </div>
 
           <div>
+            <label htmlFor="phoneNumber" className="block text-xs font-medium text-gray-700 mb-1">
+              Phone Number
+            </label>
+            <input
+              id="phoneNumber"
+              name="phoneNumber"
+              type="tel"
+              required
+              value={form.phoneNumber}
+              onChange={handleChange}
+              placeholder="+27 123 456 7890"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+            />
+          </div>
+
+          <div>
             <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1">
               Password
             </label>
@@ -125,6 +137,7 @@ const SignUp = () => {
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
             />
           </div>
+
           <button
             type="submit"
             disabled={loading}

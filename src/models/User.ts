@@ -3,6 +3,7 @@ export interface User {
   firstName: string;
   lastName: string;
   password: string;
+    phoneNumber: string;
   id?: string;
   imageUrl?: string | null;
   enabledPay?: boolean | null;
