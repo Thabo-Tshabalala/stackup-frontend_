@@ -17,8 +17,7 @@
 
 ## 🚀 Live Demo
 
-- **Frontend**: [https://stackup-frontend.vercel.app](https://stackup-frontend.vercel.app)  
-- **Backend API**: [https://stack-up-backend-production.up.railway.app](https://stack-up-backend-production.up.railway.app)  
+- **Frontend**: [[https://stackup-frontend.vercel.app](https://stackup-frontend.vercel.app)  ](https://stackup-frontend-eight.vercel.app/)
 
 > Try it out!
 
