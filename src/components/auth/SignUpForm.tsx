@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState } from 'react';
@@ -12,7 +13,7 @@ const SignUp = () => {
     firstName: '',
     lastName: '',
     password: '',
-    phoneNumber: '', // <-- added
+    phoneNumber: '', 
   });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -84,7 +85,7 @@ const SignUp = () => {
                   value={form[field]}
                   onChange={handleChange}
                   placeholder={field === 'firstName' ? 'John' : 'Doe'}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+                  className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
                 />
               </div>
             ))}
@@ -102,7 +103,7 @@ const SignUp = () => {
               value={form.email}
               onChange={handleChange}
               placeholder="john@example.com"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+              className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
             />
           </div>
 
@@ -118,7 +119,7 @@ const SignUp = () => {
               value={form.phoneNumber}
               onChange={handleChange}
               placeholder="+27 123 456 7890"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+              className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
             />
           </div>
 
@@ -134,7 +135,7 @@ const SignUp = () => {
               value={form.password}
               onChange={handleChange}
               placeholder="••••••••"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+              className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
             />
           </div>
 

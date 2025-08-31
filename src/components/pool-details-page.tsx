@@ -22,11 +22,11 @@ import PayoutOrder, { PayoutMember } from "@/components/PayoutOrder";
 
 /* -------------------------- Small UI helpers -------------------------- */
 
-const Spinner: React.FC<{ size?: number; colorClass?: string; className?: string }> = ({
-  size = 18,
-  colorClass = "text-white",
-  className = "",
-}) => (
+const Spinner: React.FC<{
+  size?: number;
+  colorClass?: string;
+  className?: string;
+}> = ({ size = 18, colorClass = "text-white", className = "" }) => (
   <svg
     className={`animate-spin ${colorClass} ${className}`}
     xmlns="http://www.w3.org/2000/svg"
@@ -35,7 +35,14 @@ const Spinner: React.FC<{ size?: number; colorClass?: string; className?: string
     height={size}
     fill="none"
   >
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <circle
+      className="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+    />
     <path
       className="opacity-75"
       fill="currentColor"
@@ -44,7 +51,9 @@ const Spinner: React.FC<{ size?: number; colorClass?: string; className?: string
   </svg>
 );
 
-const IndeterminateBar: React.FC<{ barClass?: string }> = ({ barClass = "bg-blue-600" }) => (
+const IndeterminateBar: React.FC<{ barClass?: string }> = ({
+  barClass = "bg-blue-600",
+}) => (
   <div className="h-1 w-full overflow-hidden rounded bg-blue-100">
     <div className={`h-full w-1/2 ${barClass} animate-pulse`} />
   </div>
@@ -106,8 +115,8 @@ interface RawMember {
 
 interface Contribution {
   id: string;
-  date: string;      // display-friendly date
-  ts?: number;       // numeric timestamp for sort
+  date: string; // display-friendly date
+  ts?: number; // numeric timestamp for sort
   amount: number;
   memberId: string;
   memberName: string;
@@ -119,7 +128,10 @@ interface Contribution {
 const transformMembers = (members: RawMember[], pool: Pool) => {
   return members.map((m, index) => {
     const fullName =
-      m.name || `${m.firstName ?? ""} ${m.lastName ?? ""}`.trim() || m.email || "Unknown";
+      m.name ||
+      `${m.firstName ?? ""} ${m.lastName ?? ""}`.trim() ||
+      m.email ||
+      "Unknown";
 
     return {
       id:
@@ -131,7 +143,9 @@ const transformMembers = (members: RawMember[], pool: Pool) => {
       email: m.email ?? "",
       avatar: m.avatar?.startsWith("http")
         ? m.avatar
-        : `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random`,
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            fullName
+          )}&background=random`,
       contribution: m.contribution ?? 0,
       isCreator: m.email === pool.name.split("-")[0],
     };
@@ -149,7 +163,9 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
 
   const [contributionAmount, setContributionAmount] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
-  const [activeTab, setActiveTab] = useState<"overview" | "contributions" | "members">("overview");
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "contributions" | "members"
+  >("overview");
   const [isContributeDialogOpen, setIsContributeDialogOpen] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -164,13 +180,17 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
   const [isInviting, setIsInviting] = useState(false);
 
   // simple toast banner
-  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [toast, setToast] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ type, message });
     window.setTimeout(() => setToast(null), 2600);
   };
 
-  const progressPercentage = (transformedPool.currentAmount / transformedPool.goal) * 100;
+  const progressPercentage =
+    (transformedPool.currentAmount / transformedPool.goal) * 100;
   const remainingAmount = transformedPool.goal - transformedPool.currentAmount;
   const currentUser = transformedPool.members.find(
     (m) => m.email === localStorage.getItem("userEmail")
@@ -181,19 +201,23 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
     const fetchContributions = async () => {
       try {
         const data = await externalApiFetch(`/${pool.id}/transactions`);
-        const contribs: Contribution[] = (data.transactions || []).map((t: any) => ({
-          id: t.id,
-          ts: new Date(t.createdAt).getTime(),
-          date: new Date(t.createdAt).toLocaleDateString("en-ZA", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          }),
-          amount: t.value,
-          memberId: t.userId,
-          memberName: t.txType,
-          memberAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(t.txType)}&background=random`,
-        }));
+        const contribs: Contribution[] = (data.transactions || []).map(
+          (t: any) => ({
+            id: t.id,
+            ts: new Date(t.createdAt).getTime(),
+            date: new Date(t.createdAt).toLocaleDateString("en-ZA", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            }),
+            amount: t.value,
+            memberId: t.userId,
+            memberName: t.txType,
+            memberAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+              t.txType
+            )}&background=random`,
+          })
+        );
         setContributions(contribs);
       } catch (err) {
         console.error("Failed to load contributions:", err);
@@ -225,7 +249,8 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
   const handleContribute = async () => {
     const amount = Number(contributionAmount);
     if (!amount || isNaN(amount)) return alert("Enter valid amount");
-    if (!transformedPool.paymentIdentifier) return alert("Payment identifier missing");
+    if (!transformedPool.paymentIdentifier)
+      return alert("Payment identifier missing");
 
     try {
       setIsContributing(true);
@@ -233,7 +258,11 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
       if (!token) throw new Error("Unauthorized");
 
       await poolAPI.post(`/contribute`, null, {
-        params: { poolPaymentId: transformedPool.paymentIdentifier, amount, notes: "" },
+        params: {
+          poolPaymentId: transformedPool.paymentIdentifier,
+          amount,
+          notes: "",
+        },
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -249,11 +278,11 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
       });
 
       setContributionAmount("");
-      setIsContributeDialogOpen(false);      
+      setIsContributeDialogOpen(false);
       showToast("success", "Contribution processed");
     } catch {
       showToast("success", "Contribution processed");
-          setIsContributeDialogOpen(false);      
+      setIsContributeDialogOpen(false);
     } finally {
       setIsContributing(false);
     }
@@ -261,19 +290,29 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
 
   /* ------------------------------- Invite ------------------------------- */
   const handleInviteMember = async () => {
-    if (!newMemberEmail || !/\S+@\S+\.\S+/.test(newMemberEmail)) return alert("Enter valid email");
+    if (!newMemberEmail || !/\S+@\S+\.\S+/.test(newMemberEmail))
+      return alert("Enter valid email");
     try {
       setIsInviting(true);
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Unauthorized");
 
-      await poolAPI.post(`/${pool.id}/invite`, { email: newMemberEmail }, { headers: { Authorization: `Bearer ${token}` } });
+      await poolAPI.post(
+        `/${pool.id}/invite`,
+        { email: newMemberEmail },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       setInvites((prev) => [
         ...prev,
-        { id: Date.now().toString(), email: newMemberEmail, invitedAt: new Date().toISOString(), status: "PENDING" },
+        {
+          id: Date.now().toString(),
+          email: newMemberEmail,
+          invitedAt: new Date().toISOString(),
+          status: "PENDING",
+        },
       ]);
-      setIsInviteDialogOpen(false);            // ✅ close modal on success
+      setIsInviteDialogOpen(false); // ✅ close modal on success
       showToast("success", `Invite sent to ${newMemberEmail}`);
     } catch {
       showToast("error", "Failed to invite member");
@@ -291,23 +330,26 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
   };
 
   /* -------------------------- Payout computation ------------------------ */
-  const payoutMembers: PayoutMember[] = transformedPool.members.map((m, index) => {
-    const paid = transformedPool.contributionHistory
-      .filter((c) => c.memberId === m.id)
-      .reduce((sum, c) => sum + c.amount, 0);
+  const payoutMembers: PayoutMember[] = transformedPool.members.map(
+    (m, index) => {
+      const paid = transformedPool.contributionHistory
+        .filter((c) => c.memberId === m.id)
+        .reduce((sum, c) => sum + c.amount, 0);
 
-    let status: "paid" | "next" | "pending" = "pending";
-    if (paid >= contributionPerMember && contributionPerMember > 0) status = "paid";
+      let status: "paid" | "next" | "pending" = "pending";
+      if (paid >= contributionPerMember && contributionPerMember > 0)
+        status = "paid";
 
-    return {
-      id: m.id,
-      name: m.name,
-      avatar: m.avatar,
-      amount: `R${paid.toLocaleString() || 0}`,
-      status,
-      position: index + 1,
-    };
-  });
+      return {
+        id: m.id,
+        name: m.name,
+        avatar: m.avatar,
+        amount: `R${paid.toLocaleString() || 0}`,
+        status,
+        position: index + 1,
+      };
+    }
+  );
 
   const nextIndex = payoutMembers.findIndex((m) => m.status === "pending");
   if (nextIndex !== -1) payoutMembers[nextIndex].status = "next";
@@ -331,7 +373,9 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{transformedPool.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {transformedPool.name}
+            </h1>
             <p className="text-gray-600 mt-1">{transformedPool.description}</p>
           </div>
           {currentUser?.isCreator && (
@@ -402,10 +446,13 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
           </StatCard>
           <StatCard
             label="Next Payment"
-            value={new Date(transformedPool.nextPaymentDate).toLocaleDateString("en-ZA", {
-              day: "2-digit",
-              month: "short",
-            })}
+            value={new Date(transformedPool.nextPaymentDate).toLocaleDateString(
+              "en-ZA",
+              {
+                day: "2-digit",
+                month: "short",
+              }
+            )}
             subValue={transformedPool.frequency}
             icon={<Clock className="h-5 w-5 text-gray-600" />}
             bgColor="bg-gray-50"
@@ -418,7 +465,9 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
             {["overview", "contributions", "members"].map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab as "overview" | "contributions" | "members")}
+                onClick={() =>
+                  setActiveTab(tab as "overview" | "contributions" | "members")
+                }
                 className={`px-6 py-4 font-medium text-sm border-b-2 transition ${
                   activeTab === tab
                     ? "border-blue-600 text-blue-700"
@@ -451,7 +500,10 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
                   // Skeleton shimmer list
                   <ul className="space-y-3">
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <li key={i} className="p-4 bg-gray-50 rounded-lg animate-pulse">
+                      <li
+                        key={i}
+                        className="p-4 bg-gray-50 rounded-lg animate-pulse"
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 rounded-full bg-gray-200" />
@@ -469,26 +521,52 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
                     ))}
                   </ul>
                 ) : contributions.length === 0 ? (
-                  <p className="text-gray-500 text-sm text-center py-4">No contributions yet</p>
+                  <p className="text-gray-500 text-sm text-center py-4">
+                    No contributions yet
+                  </p>
                 ) : (
                   <ul className="space-y-3">
                     {contributions
                       .sort((a, b) => (b.ts ?? 0) - (a.ts ?? 0))
-                      .map((c) => (
-                        <li key={c.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <img src={c.memberAvatar} alt={c.memberName} className="w-10 h-10 rounded-full" />
-                            <div>
-                              <p className="font-medium text-gray-900">{c.memberName}</p>
-                              <p className="text-sm text-gray-500">Contribution</p>
+                      .map((c) => {
+                        const isOutgoing = c.memberName
+                          .toLowerCase()
+                          .startsWith("payment to");
+
+                        return (
+                          <li
+                            key={c.id}
+                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <img
+                                src={c.memberAvatar}
+                                alt={c.memberName}
+                                className="w-10 h-10 rounded-full"
+                              />
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {c.memberName}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  {isOutgoing ? "Payout" : "Contribution"}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-green-600">+R{c.amount.toFixed(2)}</p>
-                            <p className="text-xs text-gray-500">{c.date}</p>
-                          </div>
-                        </li>
-                      ))}
+                            <div className="text-right">
+                              <p
+                                className={`font-bold ${
+                                  isOutgoing ? "text-red-600" : "text-green-600"
+                                }`}
+                              >
+                                {isOutgoing
+                                  ? `-R${Math.abs(c.amount).toFixed(2)}`
+                                  : `+R${c.amount.toFixed(2)}`}
+                              </p>
+                            </div>
+                          </li>
+                        );
+                      })}
                   </ul>
                 )}
               </div>
@@ -497,12 +575,23 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
             {activeTab === "members" && (
               <ul className="space-y-2">
                 {transformedPool.members.map((m) => (
-                  <li key={m.id} className="flex justify-between items-center p-3 border-b border-gray-100">
+                  <li
+                    key={m.id}
+                    className="flex justify-between items-center p-3 border-b border-gray-100"
+                  >
                     <div className="flex items-center space-x-3">
-                      <img src={m.avatar} alt={m.name} className="w-9 h-9 rounded-full" />
-                      <span className="font-medium text-gray-900">{m.name}</span>
+                      <img
+                        src={m.avatar}
+                        alt={m.name}
+                        className="w-9 h-9 rounded-full"
+                      />
+                      <span className="font-medium text-gray-900">
+                        {m.name}
+                      </span>
                     </div>
-                    <span className="text-sm text-gray-600">Owes: R{memberRemaining(m.id).toFixed(2)}</span>
+                    <span className="text-sm text-gray-600">
+                      Owes: R{memberRemaining(m.id).toFixed(2)}
+                    </span>
                     {currentUser?.isCreator && !m.isCreator && (
                       <button
                         onClick={() => handleRemoveMember(m.id)}
@@ -515,7 +604,9 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
                 ))}
                 {invites.length > 0 && (
                   <li className="mt-4 pt-4 border-t border-gray-200">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Pending Invites</h4>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Pending Invites
+                    </h4>
                     {invites.map((i) => (
                       <div
                         key={i.id}
@@ -549,32 +640,42 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
         <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-[1px] flex items-center justify-center">
           <div className="bg-white px-5 py-4 rounded-xl shadow-xl flex items-center space-x-3">
             <Spinner size={22} colorClass="text-blue-600" />
-            <span className="font-medium text-gray-800">Processing contribution…</span>
+            <span className="font-medium text-gray-800">
+              Processing contribution…
+            </span>
           </div>
         </div>
       )}
 
       {/* Modals */}
       {isContributeDialogOpen && (
-        <Modal title="Contribute to Pool" onClose={() => (isContributing ? null : setIsContributeDialogOpen(false))}>
+        <Modal
+          title="Contribute to Pool"
+          onClose={() =>
+            isContributing ? null : setIsContributeDialogOpen(false)
+          }
+        >
           {/* Indeterminate bar when loading */}
           {isContributing && <IndeterminateBar />}
 
           <div className="space-y-4 mt-3">
-            <label className="block text-sm font-medium text-gray-700">Amount (ZAR)</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Amount (ZAR)
+            </label>
             <input
               type="number"
               value={contributionAmount}
               onChange={(e) => setContributionAmount(e.target.value)}
               placeholder="Enter amount"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:opacity-60"
+              className="w-full p-3 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:opacity-60"
               disabled={isContributing}
               aria-busy={isContributing}
             />
             <p className="text-gray-500 text-sm">
               Suggested contribution: R{contributionPerMember.toFixed(2)}.
               <br />
-              If you contribute more, the extra will be refunded as new members join.
+              If you contribute more, the extra will be refunded as new members
+              join.
             </p>
 
             <div className="flex justify-end space-x-3 pt-2">
@@ -605,18 +706,23 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
       )}
 
       {isInviteDialogOpen && (
-        <Modal title="Invite Member" onClose={() => (isInviting ? null : setIsInviteDialogOpen(false))}>
+        <Modal
+          title="Invite Member"
+          onClose={() => (isInviting ? null : setIsInviteDialogOpen(false))}
+        >
           {/* Indeterminate bar when loading */}
           {isInviting && <IndeterminateBar barClass="bg-teal-600" />}
 
           <div className="space-y-4 mt-3">
-            <label className="block text-sm font-medium text-gray-700">Email Address</label>
+            <label className="block text-black font-medium text-gray-700">
+              Email Address
+            </label>
             <input
               type="email"
               value={newMemberEmail}
               onChange={(e) => setNewMemberEmail(e.target.value)}
               placeholder="member@example.com"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:opacity-60"
+              className="w-full p-3 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:opacity-60"
               disabled={isInviting}
               aria-busy={isInviting}
             />
@@ -648,9 +754,13 @@ const PoolDetailsPage: React.FC<PoolDetailsPageProps> = ({ pool }) => {
       )}
 
       {isDeleteConfirmOpen && (
-        <Modal title="Confirm Delete" onClose={() => setIsDeleteConfirmOpen(false)}>
+        <Modal
+          title="Confirm Delete"
+          onClose={() => setIsDeleteConfirmOpen(false)}
+        >
           <p className="text-gray-700">
-            Are you sure you want to delete this pool? This action cannot be undone.
+            Are you sure you want to delete this pool? This action cannot be
+            undone.
           </p>
           <div className="flex justify-end space-x-3 pt-4">
             <button
@@ -682,7 +792,15 @@ const StatCard: React.FC<{
   valueColor?: string;
   bgColor?: string;
   children?: React.ReactNode;
-}> = ({ label, value, subValue, icon, valueColor = "text-gray-900", bgColor = "bg-gray-50", children }) => (
+}> = ({
+  label,
+  value,
+  subValue,
+  icon,
+  valueColor = "text-gray-900",
+  bgColor = "bg-gray-50",
+  children,
+}) => (
   <div className={`p-4 rounded-xl ${bgColor} flex flex-col space-y-2`}>
     <div className="flex items-center space-x-2">
       {icon}
@@ -693,11 +811,11 @@ const StatCard: React.FC<{
   </div>
 );
 
-const ActionCard: React.FC<{ icon: JSX.Element; title: string; onClick: () => void }> = ({
-  icon,
-  title,
-  onClick,
-}) => (
+const ActionCard: React.FC<{
+  icon: JSX.Element;
+  title: string;
+  onClick: () => void;
+}> = ({ icon, title, onClick }) => (
   <div
     onClick={onClick}
     className="p-6 bg-white border border-gray-200 rounded-xl flex items-center space-x-4 cursor-pointer hover:shadow-lg transition"
@@ -707,11 +825,11 @@ const ActionCard: React.FC<{ icon: JSX.Element; title: string; onClick: () => vo
   </div>
 );
 
-const Modal: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({
-  title,
-  onClose,
-  children,
-}) => (
+const Modal: React.FC<{
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}> = ({ title, onClose, children }) => (
   <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
     <div className="bg-white p-6 rounded-xl w-full max-w-md relative">
       <h3 className="text-lg font-medium text-gray-900">{title}</h3>

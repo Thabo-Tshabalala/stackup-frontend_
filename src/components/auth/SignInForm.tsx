@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState } from 'react';
@@ -34,13 +35,11 @@ const handleSubmit = async (e: React.FormEvent) => {
     const token = res.data.token || res.data.accessToken;
     if (!token) throw new Error('No token received');
 
-    // Save token in localStorage
     localStorage.setItem('token', token);
 
-    // Give components (like header) a small moment to detect the token
     setTimeout(() => {
       router.push('/dashboard');
-    }, 50); // 50ms delay is usually enough
+    }, 50); 
 
   } catch (err) {
     console.error('Login error:', err);
@@ -86,7 +85,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               value={formData.emailOrPhone}
               onChange={handleChange}
               placeholder="Enter email or phone"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+              className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
             />
           </div>
 
@@ -102,7 +101,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               value={formData.password}
               onChange={handleChange}
               placeholder="Enter password"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+              className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-white-900"
             />
           </div>
 
@@ -115,12 +114,13 @@ const handleSubmit = async (e: React.FormEvent) => {
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-600">
-          Don't have an account?{' '}
-          <a href="/signup" className="font-medium text-blue-600 hover:underline">
-            Create one
-          </a>
-        </p>
+<p className="text-center text-xs text-gray-600">
+  Dont have an account?{' '}
+  <a href="/signup" className="font-medium text-blue-600 hover:underline">
+    Create one
+  </a>
+</p>
+
       </div>
     </div>
   );
