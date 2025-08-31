@@ -18,13 +18,15 @@ interface PayoutOrderProps {
 
 const PayoutOrder: React.FC<PayoutOrderProps> = ({ members, nextUpName }) => {
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-2 sm:space-y-0">
         <h3 className="text-lg font-semibold text-gray-900">Payout Schedule</h3>
-        <span className="px-3 py-1 bg-gradient-to-r from-teal-50 to-emerald-50 text-emerald-800 text-xs font-medium rounded-full">
+        <span className="px-3 py-1 bg-gradient-to-r from-teal-50 to-emerald-50 text-emerald-800 text-xs font-medium rounded-full whitespace-nowrap">
           Stokvel Mode
         </span>
       </div>
+
 
       <p className="text-sm text-gray-600 mb-5">
         Each member will receive the full pot once, in the order below.
@@ -34,27 +36,33 @@ const PayoutOrder: React.FC<PayoutOrderProps> = ({ members, nextUpName }) => {
         {members.map((member) => (
           <div
             key={member.id}
-            className={`flex items-center justify-between p-4 rounded-xl border-2 transition ${
-              member.status === "next" ? "border-teal-200 bg-teal-50 shadow-sm" : "border-gray-100 bg-gray-50"
+            className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 rounded-xl border-2 transition ${
+              member.status === "next"
+                ? "border-teal-200 bg-teal-50 shadow-sm"
+                : "border-gray-100 bg-gray-50"
             }`}
           >
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3 w-full sm:w-auto mb-3 sm:mb-0">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-sm ${
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0 ${
                   member.status === "next" ? "bg-teal-500 ring-4 ring-teal-100" : "bg-gray-400"
                 }`}
               >
                 {member.position}
               </div>
-              <div>
-                <p className={`font-medium ${member.status === "next" ? "text-teal-900" : "text-gray-900"}`}>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`font-medium truncate ${
+                    member.status === "next" ? "text-teal-900" : "text-gray-900"
+                  }`}
+                >
                   {member.name}
                 </p>
-                <p className="text-sm text-gray-500">{member.amount} • Cycle {member.position}</p>
+                <p className="text-sm text-gray-500 truncate">{member.amount} • Cycle {member.position}</p>
               </div>
             </div>
 
-            <div className="text-right">
+            <div className="flex-shrink-0 self-start sm:self-center">
               {member.status === "paid" && (
                 <div className="flex items-center space-x-1 text-green-600">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -72,16 +80,20 @@ const PayoutOrder: React.FC<PayoutOrderProps> = ({ members, nextUpName }) => {
                   Next Up
                 </div>
               )}
-              {member.status === "pending" && <div className="text-xs text-gray-500">Pending</div>}
+              {member.status === "pending" && (
+                <div className="text-xs text-gray-500">Pending</div>
+              )}
             </div>
           </div>
         ))}
       </div>
 
+      {/* Admin Note */}
       {nextUpName && (
-        <div className="mt-5 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-          <p className="text-xs text-blue-800">
-            <strong>Admin Note:</strong> Next payout will go to <strong>{nextUpName}</strong> once all contributions are confirmed.
+        <div className="mt-5 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+          <p className="text-xs text-blue-800 leading-tight">
+            <strong>Admin Note:</strong> Next payout will go to{" "}
+            <strong>{nextUpName}</strong> once all contributions are confirmed.
           </p>
         </div>
       )}
