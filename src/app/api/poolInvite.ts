@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { PoolInvite } from '@/models/PoolInvite';
 
 const poolInviteAPI = axios.create({
-  baseURL: 'http://localhost:8080/api/pools-invite',
+  baseURL: 'https://stack-up-backend-production.up.railway.app/api/pools-invite',
 });
 
 poolInviteAPI.interceptors.request.use(config => {

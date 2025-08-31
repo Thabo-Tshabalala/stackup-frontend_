@@ -53,7 +53,7 @@ export const ActivePools: React.FC<ActivePoolsProps> = ({ onViewPool }) => {
         if (!token) throw new Error("No token found");
 
         const res = await axios.get(
-          `http://localhost:8080/api/pools/my-active`,
+          `https://stack-up-backend-production.up.railway.app/api/pools/my-active`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

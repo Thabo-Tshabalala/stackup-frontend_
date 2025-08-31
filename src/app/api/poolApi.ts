@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { Pool } from '@/models/Pool';
 
 const poolAPI = axios.create({
-  baseURL: 'http://localhost:8080/api/pools',
+  baseURL: 'https://stack-up-backend-production.up.railway.app/api/pools',
 });
 
 poolAPI.interceptors.request.use(config => {
