@@ -1,5 +1,5 @@
 'use client';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import API from '@/app/api/api';
@@ -19,46 +19,50 @@ export const RecentTransactions: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const meRes = await API.get('/me');
-        const userData = meRes.data as { apiUserId: string };
-        const apiUserId = userData.apiUserId;
-        const txData = await externalApiFetch(`/${apiUserId}/transactions`);
+  const fetchTransactions = async () => {
+    try {
+      const meRes = await API.get('/me');
+      const userData = meRes.data as { apiUserId: string };
+      const apiUserId = userData.apiUserId;
+      const txData = await externalApiFetch(`/${apiUserId}/transactions`);
 
-        const mapped: Transaction[] = (txData.transactions || []).map((t: unknown) => {
-          const tx = t as {
-            id: string;
-            value: number;
-            txType?: string;
-            createdAt: string;
-            status?: string;
-          };
-          return {
-            id: tx.id,
-            type: tx.value < 0 ? 'send' : 'receive',
-            amount: Math.abs(tx.value),
-            counterparty: tx.txType?.replace('Payment from ', '') || 'Unknown',
-            date: new Date(tx.createdAt).toLocaleDateString('en-ZA', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-            }),
-            status: tx.status?.toLowerCase() as any,
-          };
-        });
+      const mapped: Transaction[] = (txData.transactions || []).map((t: any) => {
+        const isSend = t.txType.startsWith('Payment to ');
+        const isReceive = t.txType.startsWith('Payment from ');
 
-        setTransactions(mapped.slice(0, 5));
-      } catch (err) {
-        console.error('Error fetching transactions:', err);
-        setTransactions([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+        return {
+          id: t.id,
+          type: isSend ? 'send' : isReceive ? 'receive' : 'bet',
+          amount: Math.abs(t.value),
+          counterparty: t.txType.replace(/^Payment (to|from) /, '') || 'Unknown',
+          date: new Date(t.createdAt).toLocaleDateString('en-ZA', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          }),
+          status: t.status?.toLowerCase() as any,
+        };
+      });
 
-    fetchTransactions();
-  }, []);
+      setTransactions(mapped.slice(0, 5));
+    } catch (err) {
+      console.error('Error fetching transactions:', err);
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch
+  fetchTransactions();
+
+  // Poll every 5 seconds
+  const intervalId = setInterval(fetchTransactions, 5000);
+
+  // Cleanup on unmount
+  return () => clearInterval(intervalId);
+}, []);
+
 
   if (loading) {
     return (
@@ -106,17 +110,18 @@ export const RecentTransactions: React.FC = () => {
           {transactions.map((tx) => {
             const isSent = tx.type === 'send';
             const displayName = tx.counterparty || 'Unknown User';
-            const category = isSent
-              ? 'Pool Contribution'
-              : tx.type === 'receive'
-              ? 'Pool Payout'
-              : 'Bet';
+ const category = isSent
+  ? 'Contribution (Money Out)'
+  : tx.type === 'receive'
+  ? 'Payout (Money In)'
+  : 'Bet';
 
-            const getBadgeColor = () => {
-              if (isSent) return 'bg-red-100 text-red-800';
-              if (tx.type === 'receive') return 'bg-green-100 text-green-800';
-              return 'bg-blue-100 text-blue-800';
-            };
+const getBadgeColor = () => {
+  if (isSent) return 'bg-red-100 text-red-800';
+  if (tx.type === 'receive') return 'bg-green-100 text-green-800';
+  return 'bg-blue-100 text-blue-800';
+};
+
 
             return (
               <div

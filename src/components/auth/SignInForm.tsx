@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState } from 'react';
@@ -18,36 +19,40 @@ const SignIn = () => {
     if (error) setError(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError(null);
+  setLoading(true);
 
-    try {
-      console.log('Logging in with:', formData);
+  try {
+    console.log('Logging in with:', formData);
 
-      const res = await API.post<{ token?: string; accessToken?: string }>('/login', {
-        email: formData.emailOrPhone,
-        password: formData.password,
-      });
+    const res = await API.post<{ token?: string; accessToken?: string }>('/login', {
+      email: formData.emailOrPhone.trim(),
+      password: formData.password,
+    });
 
-      const token = res.data.token || res.data.accessToken;
-      if (!token) throw new Error('No token received');
+    const token = res.data.token || res.data.accessToken;
+    if (!token) throw new Error('No token received');
 
-      localStorage.setItem('token', token);
+    localStorage.setItem('token', token);
+
+    setTimeout(() => {
       router.push('/dashboard');
-    } catch (err) {
-      console.error('Login error:', err);
-      const message =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (err && typeof err === 'object' && 'response' in err && (err as any).response?.data?.message) ||
-        (err && typeof err === 'object' && 'message' in err && (err as { message?: string }).message) ||
-        'Login failed';
-      setError(message as string);
-    } finally {
-      setLoading(false);
-    }
-  };
+    }, 50); 
+
+  } catch (err) {
+    console.error('Login error:', err);
+    const message =
+      (err as any)?.response?.data?.message ||
+      (err as Error)?.message ||
+      'Login failed';
+    setError(message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
@@ -80,7 +85,7 @@ const SignIn = () => {
               value={formData.emailOrPhone}
               onChange={handleChange}
               placeholder="Enter email or phone"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+              className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
             />
           </div>
 
@@ -96,7 +101,7 @@ const SignIn = () => {
               value={formData.password}
               onChange={handleChange}
               placeholder="Enter password"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+              className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-white-900"
             />
           </div>
 
@@ -109,12 +114,13 @@ const SignIn = () => {
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-600">
-          Don't have an account?{' '}
-          <a href="/signup" className="font-medium text-blue-600 hover:underline">
-            Create one
-          </a>
-        </p>
+<p className="text-center text-xs text-gray-600">
+  Dont have an account?{' '}
+  <a href="/signup" className="font-medium text-blue-600 hover:underline">
+    Create one
+  </a>
+</p>
+
       </div>
     </div>
   );
