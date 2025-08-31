@@ -17,7 +17,7 @@
 
 ## 🚀 Live Demo
 
-- **Frontend**: [[https://stackup-frontend.vercel.app](https://stackup-frontend.vercel.app)  ](https://stackup-frontend-eight.vercel.app/)
+- **Frontend**: https://stackup-frontend-eight.vercel.app/
 
 > Try it out!
 
